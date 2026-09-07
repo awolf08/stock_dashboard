@@ -1,0 +1,68 @@
+[
+  {
+    "name": "AI Leaders",
+    "accent": "cyan",
+    "symbols": [
+      "NVDA",
+      "MSFT",
+      "GOOGL",
+      "META",
+      "AMZN"
+    ]
+  },
+  {
+    "name": "Semiconductors",
+    "accent": "amber",
+    "symbols": [
+      "AMD",
+      "AVGO",
+      "TSM",
+      "SMCI",
+      "INTC"
+    ]
+  },
+  {
+    "name": "Cloud & Infra",
+    "accent": "blue",
+    "symbols": [
+      "ORCL",
+      "CRM",
+      "NOW",
+      "SNOW",
+      "DDOG"
+    ]
+  },
+  {
+    "name": "Cybersecurity",
+    "accent": "violet",
+    "symbols": [
+      "PANW",
+      "CRWD",
+      "FTNT",
+      "ZS",
+      "OKTA"
+    ]
+  },
+  {
+    "name": "FinTech",
+    "accent": "pink",
+    "symbols": [
+      "JPM",
+      "V",
+      "MA",
+      "PYPL",
+      "XYZ"
+    ]
+  },
+  {
+    "name": "Energy & Utilities",
+    "accent": "gold",
+    "symbols": [
+      "XOM",
+      "CVX",
+      "COP",
+      "NEE",
+      "DUK"
+    ]
+  }
+]
