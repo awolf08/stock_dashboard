@@ -35,7 +35,14 @@ type Category = {
   quotes: Quote[];
 };
 
+type StoredCategory = {
+  name: string;
+  accent: Accent;
+  symbols: string[];
+};
+
 const initialCategories: Category[] = watchlist.map(({ name, accent }) => ({ name, accent: accent as Accent, quotes: [] }));
+const watchlistStorageKey = 'baybell-watchlists-v1';
 
 // This is only a public navigation URL. Authentication belongs to the report host.
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
@@ -98,6 +105,61 @@ function formatSigned(value: number) {
   return `${sign}${value.toFixed(2)}`;
 }
 
+function isAccent(value: unknown): value is Accent {
+  return typeof value === 'string' && value in accentClass;
+}
+
+function readStoredWatchlists(): StoredCategory[] | null {
+  try {
+    const raw = window.localStorage.getItem(watchlistStorageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { version?: unknown; categories?: unknown };
+    if (parsed.version !== 1 || !Array.isArray(parsed.categories)) return null;
+    const categories = parsed.categories
+      .map((category): StoredCategory | null => {
+        if (!category || typeof category !== 'object') return null;
+        const candidate = category as { name?: unknown; accent?: unknown; symbols?: unknown };
+        if (typeof candidate.name !== 'string' || !candidate.name.trim() || !isAccent(candidate.accent) || !Array.isArray(candidate.symbols)) return null;
+        const symbols = [...new Set(candidate.symbols
+          .filter((symbol): symbol is string => typeof symbol === 'string')
+          .map((symbol) => symbol.trim().toUpperCase())
+          .filter(Boolean))];
+        return { name: candidate.name.trim(), accent: candidate.accent, symbols };
+      })
+      .filter((category): category is StoredCategory => Boolean(category));
+    const names = new Set(categories.map((category) => category.name.toLowerCase()));
+    return categories.length && names.size === categories.length ? categories : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeWatchlists(categories: Category[]) {
+  try {
+    window.localStorage.setItem(watchlistStorageKey, JSON.stringify({
+      version: 1,
+      categories: categories.map((category) => ({
+        name: category.name,
+        accent: category.accent,
+        symbols: category.quotes.map((quote) => quote.symbol),
+      })),
+    }));
+  } catch {
+    // Browsers may block localStorage in strict/private modes; keep the UI usable.
+  }
+}
+
+function categoriesFromStoredWatchlists(stored: StoredCategory[], quotesBySymbol: Map<string, Quote>) {
+  return stored.map((category) => ({
+    name: category.name,
+    accent: category.accent,
+    quotes: category.symbols.flatMap((symbol) => {
+      const quote = quotesBySymbol.get(symbol);
+      return quote ? [quote] : [];
+    }),
+  }));
+}
+
 export default function Home() {
   const [page, setPage] = useState<Page>('overview');
   const [categories, setCategories] = useState<Category[]>(initialCategories);
@@ -132,9 +194,14 @@ export default function Home() {
         feedQuotes.current = payload.categories.flatMap((category) => category.quotes);
         const quotesBySymbol = new Map(feedQuotes.current.map((quote) => [quote.symbol, quote]));
         if (!loaded.current) {
-          setCategories(payload.categories.map((category, index) => ({
-            ...category, accent: initialCategories[index % initialCategories.length].accent,
-          })));
+          const stored = readStoredWatchlists();
+          const nextCategories = stored
+            ? categoriesFromStoredWatchlists(stored, quotesBySymbol)
+            : payload.categories.map((category, index) => ({
+                ...category, accent: initialCategories[index % initialCategories.length].accent,
+              }));
+          setCategories(nextCategories);
+          setTargetCategory(nextCategories[0]?.name ?? '');
           loaded.current = true;
         } else {
           // Refresh prices without undoing this tab's watchlist edits.
@@ -170,6 +237,14 @@ export default function Home() {
     };
   }, [categories]);
 
+  function updateCategories(updater: (current: Category[]) => Category[]) {
+    setCategories((current) => {
+      const next = updater(current);
+      storeWatchlists(next);
+      return next;
+    });
+  }
+
   function addSymbol() {
     const symbol = symbolInput.trim().toUpperCase();
     if (!symbol) return;
@@ -179,7 +254,7 @@ export default function Home() {
     if (!target) { setSymbolError('Choose an existing watchlist first.'); return; }
     if (target.quotes.some((item) => item.symbol === symbol)) { setSymbolError('This symbol is already in this watchlist.'); return; }
     setSymbolError('');
-    setCategories((current) =>
+    updateCategories((current) =>
       current.map((category) =>
         category.name === targetCategory
           ? {
@@ -197,7 +272,7 @@ export default function Home() {
   }
 
   function removeSymbol(categoryName: string, symbol: string) {
-    setCategories((current) =>
+    updateCategories((current) =>
       current.map((category) =>
         category.name === categoryName
           ? { ...category, quotes: category.quotes.filter((quote) => quote.symbol !== symbol) }
@@ -209,7 +284,7 @@ export default function Home() {
   function addCategory() {
     const name = categoryInput.trim();
     if (!name || categories.some((category) => category.name.toLowerCase() === name.toLowerCase())) return;
-    setCategories((current) => [
+    updateCategories((current) => [
       ...current,
       {
         name,
@@ -223,7 +298,7 @@ export default function Home() {
   }
 
   function deleteCategory(name: string) {
-    setCategories((current) => current.filter((category) => category.name !== name));
+    updateCategories((current) => current.filter((category) => category.name !== name));
     if (targetCategory === name) setTargetCategory(categories.find((category) => category.name !== name)?.name ?? '');
   }
 
@@ -320,7 +395,7 @@ export default function Home() {
                 <X size={18} />
               </button>
             </div>
-            <p className="dialog-note">Choose a symbol already included in the hourly feed. Watchlist edits last for this tab only.</p>
+            <p className="dialog-note">Choose a symbol already included in the hourly feed. Watchlist edits are saved in this browser.</p>
             {symbolError && <p role="alert" className="dialog-note">{symbolError}</p>}
             <label>
               Symbol

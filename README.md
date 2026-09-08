@@ -9,7 +9,7 @@ A stock dashboard with verified Finnhub snapshots, refreshed about once an hour 
 - Failed refreshes keep the last loaded valid snapshot. A snapshot older than two hours is marked overdue. The snapshot fetch time is separate from the last trade time; old trade timestamps are normal when markets are closed.
 - Hover over a symbol for its quote timestamp. Legacy snapshots made by the old script have no per-symbol timestamps; fetch again to add them.
 - Events and Reports are explicitly labelled demo content. Fake index cards and sparklines have been removed.
-- Watchlist edits in the page are temporary for the current tab. Add Symbol can reuse only symbols in the fetched feed. For permanent changes, edit `config/watchlist.json`, run the update and reload the page. Block uses `XYZ`, replacing the obsolete `SQ` symbol.
+- Watchlist edits in the page are saved in the current browser. Add Symbol can reuse only symbols in the fetched feed. To make a symbol available to every visitor and every browser, edit `config/watchlist.json`, commit it, and let the update workflow fetch the next snapshot. Block uses `XYZ`, replacing the obsolete `SQ` symbol.
 
 ## 1. Local setup
 
@@ -88,6 +88,12 @@ The workflow runs on pushes to `main`, manual runs, and scheduled checks every 1
 GitHub scheduling is best-effort and can be delayed or skipped under load. The extra scheduled checks give GitHub several chances each hour to recover from a missed trigger while keeping the target quote refresh cadence near one hour. Public repositories with no activity for 60 days can have scheduled workflows disabled; because this workflow does not create hourly commits, check the Actions page periodically and re-enable it if necessary. GitHub Actions usage is subject to your plan's allowance, especially for private repositories.
 
 Your computer can be off. Keep an eye on the snapshot timestamp and GitHub's failed-run notifications. A browser left open checks the published file every minute; this does not make additional calls to Finnhub.
+
+## 6. Watchlist persistence
+
+Add Symbol, Remove Symbol, Add Category and Delete Category are saved to this browser's `localStorage`. The saved layout contains category names, accent colors and ticker symbols only; prices still come from the latest verified Finnhub snapshot. A later hourly snapshot refreshes prices without undoing your saved watchlists.
+
+This is per browser and per device. To publish a default watchlist for everyone, update `config/watchlist.json`, then commit and push the change. The GitHub workflow fetches quotes for the configured symbols before deploying. A public static page should not store a GitHub token in the browser to write watchlist changes back to the repository.
 
 ## Troubleshooting
 
