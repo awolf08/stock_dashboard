@@ -169,10 +169,16 @@ function categoriesFromPayload(categories: { name: string; quotes: Quote[] }[]) 
 }
 
 function categoriesFromStoredWatchlists(stored: StoredCategory[], defaults: Category[], quotesBySymbol: Map<string, Quote>) {
-  const storedNames = new Set(stored.map((category) => category.name.toLowerCase()));
+  const storedByName = new Map(stored.map((category) => [category.name.toLowerCase(), category]));
+  const defaultNames = new Set(defaults.map((category) => category.name.toLowerCase()));
   return [
-    ...stored.map((category) => categoryWithQuotes(category, quotesBySymbol)),
-    ...defaults.filter((category) => !storedNames.has(category.name.toLowerCase())),
+    ...defaults.map((category) => {
+      const storedCategory = storedByName.get(category.name.toLowerCase());
+      return storedCategory ? categoryWithQuotes(storedCategory, quotesBySymbol) : category;
+    }),
+    ...stored
+      .filter((category) => !defaultNames.has(category.name.toLowerCase()))
+      .map((category) => categoryWithQuotes(category, quotesBySymbol)),
   ];
 }
 

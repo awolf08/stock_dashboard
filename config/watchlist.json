@@ -1,5 +1,23 @@
 [
   {
+    "name": "INDEX ETF",
+    "accent": "cyan",
+    "symbols": [
+      "QQQ",
+      "SPY",
+      "DIA",
+      "IWM",
+      "SSO",
+      "QLD",
+      "TQQQ",
+      "SMH",
+      "SOXL",
+      "IGV",
+      "UDOW",
+      "UPRO"
+    ]
+  },
+  {
     "name": "AI Leaders",
     "accent": "cyan",
     "symbols": [
@@ -63,24 +81,6 @@
       "COP",
       "NEE",
       "DUK"
-    ]
-  },
-  {
-    "name": "INDEX ETF",
-    "accent": "cyan",
-    "symbols": [
-      "QQQ",
-      "SPY",
-      "DIA",
-      "IWM",
-      "SSO",
-      "QLD",
-      "TQQQ",
-      "SMH",
-      "SOXL",
-      "IGV",
-      "UDOW",
-      "UPRO"
     ]
   }
 ]
