@@ -408,6 +408,11 @@ button {
   height: 72px;
   overflow: visible;
   align-self: end;
+  color: #58e58b;
+}
+
+.index-card.negative .sparkline {
+  color: #ff593f;
 }
 
 .sparkline line {
@@ -513,6 +518,8 @@ button {
 
 .quote-panel {
   border-top: 2px solid var(--panel-accent);
+  max-height: 304px;
+  overflow: hidden;
 }
 
 .card-title {
@@ -574,6 +581,29 @@ button {
   border-top: 1px solid rgba(132, 169, 208, 0.11);
   color: #e3ecf7;
   font-size: 14px;
+}
+
+.quote-panel {
+  overflow-y: auto;
+  scrollbar-color: rgba(132, 169, 208, 0.38) transparent;
+  scrollbar-width: thin;
+}
+
+.quote-panel .card-title,
+.quote-panel .quote-header {
+  position: sticky;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(9, 25, 45, 0.96), rgba(4, 13, 27, 0.96)),
+    rgba(4, 13, 27, 0.96);
+}
+
+.quote-panel .card-title {
+  top: 0;
+}
+
+.quote-panel .quote-header {
+  top: 54px;
 }
 
 .quote-row strong {

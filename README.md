@@ -9,7 +9,8 @@ A stock dashboard with verified Finnhub snapshots, refreshed about once an hour 
 - Failed refreshes keep the last loaded valid snapshot. A snapshot older than two hours is marked overdue. The snapshot fetch time is separate from the last trade time; old trade timestamps are normal when markets are closed.
 - Hover over a symbol for its quote timestamp. Legacy snapshots made by the old script have no per-symbol timestamps; fetch again to add them.
 - Events and Reports are explicitly labelled demo content. Fake index cards and sparklines have been removed.
-- Watchlist edits in the page are saved in the current browser. Add Symbol can reuse only symbols in the fetched feed. To make a symbol available to every visitor and every browser, edit `config/watchlist.json`, commit it, and let the update workflow fetch the next snapshot. Block uses `XYZ`, replacing the obsolete `SQ` symbol.
+- Overview shows a top index ETF quote strip for the configured index feed. The mini line is generated from the current quote movement only; it is not historical chart data.
+- Watchlist edits in the page are saved in the current browser. Add Symbol can reuse only symbols in the fetched feed. To make a symbol available to every visitor and every browser, edit `config/watchlist.json`, commit it, and let the update workflow fetch the next snapshot. The default feed includes an `INDEX ETF` group with `QQQ`, `SPY`, `DIA`, `IWM`, `SSO`, `QLD`, `TQQQ`, `SMH`, `SOXL`, `IGV`, `UDOW` and `UPRO`.
 
 ## 1. Local setup
 

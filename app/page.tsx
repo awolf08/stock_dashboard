@@ -47,6 +47,7 @@ const watchlistStorageKey = 'baybell-watchlists-v1';
 // This is only a public navigation URL. Authentication belongs to the report host.
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
 const baybellHome = process.env.NEXT_PUBLIC_BAYBELL_HOME === '1';
+const featuredIndexSymbols = ['QQQ', 'SPY', 'DIA', 'IWM', 'SMH'];
 
 const earnings = {
   todayBefore: [
@@ -149,15 +150,45 @@ function storeWatchlists(categories: Category[]) {
   }
 }
 
-function categoriesFromStoredWatchlists(stored: StoredCategory[], quotesBySymbol: Map<string, Quote>) {
-  return stored.map((category) => ({
+function categoryWithQuotes(category: StoredCategory, quotesBySymbol: Map<string, Quote>) {
+  return {
     name: category.name,
     accent: category.accent,
     quotes: category.symbols.flatMap((symbol) => {
       const quote = quotesBySymbol.get(symbol);
       return quote ? [quote] : [];
     }),
+  };
+}
+
+function categoriesFromPayload(categories: { name: string; quotes: Quote[] }[]) {
+  return categories.map((category, index) => ({
+    ...category,
+    accent: initialCategories[index % initialCategories.length].accent,
   }));
+}
+
+function categoriesFromStoredWatchlists(stored: StoredCategory[], defaults: Category[], quotesBySymbol: Map<string, Quote>) {
+  const storedNames = new Set(stored.map((category) => category.name.toLowerCase()));
+  return [
+    ...stored.map((category) => categoryWithQuotes(category, quotesBySymbol)),
+    ...defaults.filter((category) => !storedNames.has(category.name.toLowerCase())),
+  ];
+}
+
+function makeSparklinePoints(quote: Quote) {
+  const slope = Math.max(-24, Math.min(24, quote.percent * 3.2));
+  const start = 46 - slope / 2;
+  const end = 46 + slope / 2;
+  const bend = quote.change >= 0 ? -8 : 8;
+  const points = [
+    [4, start],
+    [22, start + bend * 0.35],
+    [40, (start + end) / 2 + bend],
+    [58, end - bend * 0.2],
+    [76, end],
+  ];
+  return points.map(([x, y]) => `${x},${Math.max(14, Math.min(70, y))}`).join(' ');
 }
 
 export default function Home() {
@@ -195,11 +226,10 @@ export default function Home() {
         const quotesBySymbol = new Map(feedQuotes.current.map((quote) => [quote.symbol, quote]));
         if (!loaded.current) {
           const stored = readStoredWatchlists();
+          const defaults = categoriesFromPayload(payload.categories);
           const nextCategories = stored
-            ? categoriesFromStoredWatchlists(stored, quotesBySymbol)
-            : payload.categories.map((category, index) => ({
-                ...category, accent: initialCategories[index % initialCategories.length].accent,
-              }));
+            ? categoriesFromStoredWatchlists(stored, defaults, quotesBySymbol)
+            : defaults;
           setCategories(nextCategories);
           setTargetCategory(nextCategories[0]?.name ?? '');
           loaded.current = true;
@@ -235,6 +265,14 @@ export default function Home() {
       gainers: all.filter((quote) => quote.change > 0).length,
       losers: all.filter((quote) => quote.change < 0).length,
     };
+  }, [categories]);
+
+  const indexQuotes = useMemo(() => {
+    const quotesBySymbol = new Map(categories.flatMap((category) => category.quotes).map((quote) => [quote.symbol, quote]));
+    return featuredIndexSymbols.flatMap((symbol) => {
+      const quote = quotesBySymbol.get(symbol);
+      return quote ? [quote] : [];
+    });
   }, [categories]);
 
   function updateCategories(updater: (current: Category[]) => Category[]) {
@@ -377,6 +415,7 @@ export default function Home() {
             activeFilter={activeFilter}
             breadth={breadth}
             categories={categories}
+            indexQuotes={indexQuotes}
             onAddSymbol={() => { setSymbolError(''); setShowSymbolDialog(true); }}
             onRemoveSymbol={removeSymbol}
             onSetFilter={setActiveFilter}
@@ -486,6 +525,7 @@ function Overview({
   activeFilter,
   breadth,
   categories,
+  indexQuotes,
   onAddSymbol,
   onRemoveSymbol,
   onSetFilter,
@@ -493,6 +533,7 @@ function Overview({
   activeFilter: string;
   breadth: { gainers: number; losers: number };
   categories: Category[];
+  indexQuotes: Quote[];
   onAddSymbol: () => void;
   onRemoveSymbol: (category: string, symbol: string) => void;
   onSetFilter: (filter: string) => void;
@@ -500,6 +541,23 @@ function Overview({
   const filters = ['All', 'Gainers', 'Losers', 'Watchlist Only'];
   return (
     <div className="page-content">
+      {indexQuotes.length > 0 && (
+        <div className="index-deck" aria-label="Index ETF quotes">
+          {indexQuotes.map((quote) => (
+            <article className={`index-card ${quote.change < 0 ? 'negative' : ''}`} key={quote.symbol}>
+              <div>
+                <span>{quote.symbol}</span>
+                <strong>{formatPrice(quote.price)}</strong>
+                <em>{formatSigned(quote.change)} · {formatSigned(quote.percent)}%</em>
+              </div>
+              <svg className="sparkline" viewBox="0 0 80 80" aria-label={`${quote.symbol} ${quote.percent >= 0 ? 'up' : 'down'} ${formatSigned(quote.percent)} percent`}>
+                <line x1="0" x2="80" y1="46" y2="46" />
+                <polyline points={makeSparklinePoints(quote)} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </article>
+          ))}
+        </div>
+      )}
       <div className="page-heading">
         <h1>Overview</h1>
         <div className="action-row">
