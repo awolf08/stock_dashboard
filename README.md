@@ -120,3 +120,23 @@ For local development, optionally set `NEXT_PUBLIC_PRIVATE_REPORTS_URL` in `.env
 Do not place real private report HTML, PDFs or JSON in this project's `public/` folder, client imports or public repository. A private pathname or login link is not an access-control boundary. Verify that logged-out requests to the private report and its data/downloads require authentication, including any alternate hosting URLs. A Cloudflare gate on the custom domain alone must not leave the same files accessible at a public origin. See [Cloudflare Pages Access configuration](https://developers.cloudflare.com/pages/platform/known-issues/) and [GitHub Pages visibility](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
 
 The private report website, its login policies and DNS are not changed by this repository's workflow. Keep the existing report-domain CNAME with that website; do not assign the same apex domain to this separate Pages project.
+
+## Baybell homepage integration
+
+The `awolf08/reports` repository now has a separate homepage assembly workflow.
+It checks out this source, fetches a snapshot using its own `FINNHUB_API_KEY`
+secret, builds at `/` with `NEXT_PUBLIC_BAYBELL_HOME=1`, and overlays the result
+on its existing report archive. That mode adds real report navigation links.
+The independent `stock_dashboard` Pages deployment continues to work.
+
+To preview the homepage build locally:
+
+```bash
+NEXT_PUBLIC_BAYBELL_HOME=1 pnpm build:pages
+```
+
+The `/daily-finance/`, `/weekly-finance/` and `/guru-position/` destinations are
+provided by the reports site's assembly step, not by this app's router.
+The original report homepage remains available as `/report-index.html` after
+assembly. Private report content is never copied into this repository or its
+standalone Pages deployment.

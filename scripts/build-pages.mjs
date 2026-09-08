@@ -28,6 +28,9 @@ const html = await readFile('dist/client/index.html', 'utf8');
 if (!html.includes('<html')) throw new Error('Static export did not emit an HTML page.');
 for (const [, url] of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
   if (!url.startsWith('/')) continue;
+  // These are preserved by the reports repository's site-assembly step.
+  if (process.env.NEXT_PUBLIC_BAYBELL_HOME === '1' &&
+      ['/daily-finance/', '/weekly-finance/', '/guru-position/'].includes(url)) continue;
   if (!url.startsWith(`${basePath}/`)) throw new Error(`Asset outside Pages base path: ${url}`);
   await access(`dist/client/${url.slice(basePath.length + 1).split('?')[0]}`);
 }

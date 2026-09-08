@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable next/no-html-link-for-pages -- Report links open separately built static HTML documents, not Next.js routes. */
+
 import {
   BarChart3,
   Bell,
@@ -37,6 +39,7 @@ const initialCategories: Category[] = watchlist.map(({ name, accent }) => ({ nam
 
 // This is only a public navigation URL. Authentication belongs to the report host.
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
+const baybellHome = process.env.NEXT_PUBLIC_BAYBELL_HOME === '1';
 
 const earnings = {
   todayBefore: [
@@ -235,7 +238,14 @@ export default function Home() {
         <nav className="primary-nav" aria-label="Main navigation">
           <NavItem icon={<HomeIcon size={18} />} label="Overview" active={page === 'overview'} onClick={() => setPage('overview')} />
           <NavItem icon={<CalendarDays size={18} />} label="Events" active={page === 'events'} onClick={() => setPage('events')} />
-          <NavItem icon={<FileText size={18} />} label="Reports" active={page === 'reports'} onClick={() => setPage('reports')} />
+          {baybellHome ? (
+            <>
+              <a className="nav-item" href="/daily-finance/"><FileText size={18} /><span>Daily Finance</span></a>
+              <a className="nav-item" href="/weekly-finance/"><CalendarDays size={18} /><span>Weekly Finance</span></a>
+              <a className="nav-item" href="/guru-position/"><BarChart3 size={18} /><span>Guru Positions</span></a>
+              <a className="nav-item" href="https://options.baybell.com"><FileText size={18} /><span>Options</span></a>
+            </>
+          ) : <NavItem icon={<FileText size={18} />} label="Reports" active={page === 'reports'} onClick={() => setPage('reports')} />}
           {privateReportsUrl && (
             <a className="nav-item" href={privateReportsUrl}>
               <LockKeyhole size={18} />
