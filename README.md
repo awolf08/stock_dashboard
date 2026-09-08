@@ -1,6 +1,6 @@
 # 鬼谷仙 Dashboard
 
-A stock dashboard with verified Finnhub snapshots, updated about once an hour by GitHub Actions. The browser checks for a newly published snapshot every minute. This is not a streaming quote service.
+A stock dashboard with verified Finnhub snapshots, refreshed about once an hour by GitHub Actions when scheduling is healthy. The browser checks for a newly published snapshot every minute. This is not a streaming quote service.
 
 ## Current behavior
 
@@ -81,11 +81,11 @@ If Git asks for authentication, use GitHub Desktop or your configured Git creden
 
 The first push may fail before the secret and Pages settings exist. After completing those settings, run the workflow manually again.
 
-## 5. Hourly operation
+## 5. Scheduled operation
 
-The workflow runs on pushes to `main`, manual runs, and every day at minute 17 of each hour (UTC). It fetches quotes, builds the website, then deploys it in the same workflow. It does not commit data back to Git or depend on a second workflow being triggered by a bot commit. A failed fetch or build prevents deployment, leaving the previous published version in place.
+The workflow runs on pushes to `main`, manual runs, and scheduled checks every 10 minutes at minutes 7, 17, 27, 37, 47 and 57 UTC. Scheduled checks first look at recent successful GitHub Pages deployments. If a successful deployment is less than 55 minutes old, the run exits without fetching quotes or deploying. If the last successful deployment is older, it fetches quotes, builds the website, then deploys it in the same workflow. It does not commit data back to Git or depend on a second workflow being triggered by a bot commit. A failed fetch or build prevents deployment, leaving the previous published version in place.
 
-GitHub scheduling is best-effort and can be delayed. Public repositories with no activity for 60 days can have scheduled workflows disabled; because this workflow does not create hourly commits, check the Actions page periodically and re-enable it if necessary. GitHub Actions usage is subject to your plan's allowance, especially for private repositories.
+GitHub scheduling is best-effort and can be delayed or skipped under load. The extra scheduled checks give GitHub several chances each hour to recover from a missed trigger while keeping the target quote refresh cadence near one hour. Public repositories with no activity for 60 days can have scheduled workflows disabled; because this workflow does not create hourly commits, check the Actions page periodically and re-enable it if necessary. GitHub Actions usage is subject to your plan's allowance, especially for private repositories.
 
 Your computer can be off. Keep an eye on the snapshot timestamp and GitHub's failed-run notifications. A browser left open checks the published file every minute; this does not make additional calls to Finnhub.
 
@@ -104,7 +104,7 @@ References: [GitHub Pages workflows](https://docs.github.com/en/pages/getting-st
 
 These are separate destinations:
 
-- **Public:** this GitHub Pages build, containing hourly quotes and the explicitly labelled demo sections.
+- **Public:** this GitHub Pages build, containing roughly hourly quotes and the explicitly labelled demo sections.
 - **Private:** the existing report website behind its own verified login. The dashboard links to it but never downloads or embeds its private reports.
 
 The owner confirmed `baybell.com` and that Cloudflare Access is already configured. The Dashboard's **Private Reports** link defaults to `https://baybell.com/private/`, matching the existing site's Private Login destination. Authentication is performed by that site; the Dashboard does not create a second login system. Live Access behavior has not been independently tested in this task.

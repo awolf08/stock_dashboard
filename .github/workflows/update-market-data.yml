@@ -5,8 +5,8 @@ on:
   push:
     branches: [main]
   schedule:
-    # UTC, every day at minute 17. GitHub may delay scheduled runs.
-    - cron: '17 * * * *'
+    # Extra opportunities to recover missed schedules; the gate limits refreshes.
+    - cron: '7,17,27,37,47,57 * * * *'
 
 permissions:
   contents: read
@@ -16,7 +16,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      deployments: read
+    outputs:
+      due: ${{ steps.freshness.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        id: freshness
+        with:
+          script: |
+            const { refreshDue } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/refresh-due.mjs`);
+            return await refreshDue({ github, context });
   build:
+    needs: refresh
+    if: needs.refresh.outputs.due == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
