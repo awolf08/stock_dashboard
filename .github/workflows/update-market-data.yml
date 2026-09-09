@@ -5,15 +5,15 @@ on:
   push:
     branches: [main]
   schedule:
-    # Extra opportunities to recover missed schedules; the gate limits refreshes.
-    - cron: '7,17,27,37,47,57 * * * *'
+    # Refresh once per hour. GitHub may delay scheduled runs by a few minutes.
+    - cron: '17 * * * *'
 
 permissions:
   contents: read
 
 concurrency:
   group: github-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   refresh:
