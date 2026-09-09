@@ -4,10 +4,11 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { normalizeQuote, fetchQuote, updateMarketData } from '../scripts/fetch-finnhub-data.mjs';
+import { normalizeQuote, normalizeIndexQuote, fetchQuote, fetchIndexQuote, updateMarketData } from '../scripts/fetch-finnhub-data.mjs';
 import { parseMarketPayload, snapshotIsStale } from '../lib/market.ts';
 
 const quote = { c: 120, d: 0, dp: 0, t: 1788800000 };
+const indexQuote = { chart: { result: [{ meta: { regularMarketPrice: 5025, previousClose: 5000 }, timestamp: [1788800000] }] } };
 const sleep = async () => {};
 
 test('zero movement is valid; unavailable quotes and malformed numbers are rejected', () => {
@@ -34,6 +35,23 @@ test('rate limit retries, keeping the token out of the URL', async () => {
   assert.deepEqual(waits, [60000]);
 });
 
+test('index quotes are fetched separately from Yahoo chart data', async () => {
+  const actual = await fetchIndexQuote({ symbol: '^GSPC', label: 'S&P 500' }, {
+    sleep,
+    fetchImpl: async (url) => {
+      assert.equal(url.hostname, 'query1.finance.yahoo.com');
+      assert.equal(url.pathname.includes('%5EGSPC'), true);
+      return Response.json(indexQuote);
+    },
+  });
+  assert.equal(actual.symbol, '^GSPC');
+  assert.equal(actual.label, 'S&P 500');
+  assert.equal(actual.price, 5025);
+  assert.equal(actual.change, 25);
+  assert.equal(actual.percent, 0.5);
+  assert.throws(() => normalizeIndexQuote('^GSPC', 'S&P 500', { chart: { result: [] } }));
+});
+
 test('authentication errors fail without retries or secret-bearing provider messages', async () => {
   let calls = 0;
   await assert.rejects(fetchQuote('AAPL', 'test-secret', {
@@ -53,14 +71,16 @@ test('failed refresh preserves the previous file; success writes only verified d
     await assert.rejects(updateMarketData({ apiKey: '', outputDir, watchlist, indexes }));
     let count = 0;
     await assert.rejects(updateMarketData({ apiKey: 'test-key', outputDir, watchlist, indexes, sleep,
+      indexFetchImpl: async () => Response.json(indexQuote),
       fetchImpl: async () => Response.json(++count === 1 ? quote : { c: 0 }),
     }));
     assert.equal(await readFile(path, 'utf8'), 'previous successful snapshot');
     count = 0;
     const payload = await updateMarketData({ apiKey: 'test-key', outputDir, watchlist, indexes, sleep,
+      indexFetchImpl: async () => Response.json(indexQuote),
       fetchImpl: async () => { count += 1; return Response.json(quote); },
     });
-    assert.equal(count, 3);
+    assert.equal(count, 2);
     assert.equal(payload.provider, 'finnhub');
     assert.deepEqual(payload.indexes.map((item) => item.symbol), ['^GSPC']);
     assert.deepEqual(parseMarketPayload(JSON.parse(await readFile(path, 'utf8'))), payload);

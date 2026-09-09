@@ -44,6 +44,55 @@ export async function fetchQuote(symbol, apiKey, { fetchImpl = fetch, sleep = de
   throw new Error(`Quote request failed for ${symbol}.`);
 }
 
+export function normalizeIndexQuote(symbol, label, data) {
+  const result = data?.chart?.result?.[0];
+  const meta = result?.meta;
+  const price = meta?.regularMarketPrice;
+  const previousClose = meta?.previousClose ?? meta?.chartPreviousClose;
+  const timestamp = result?.timestamp?.at(-1) ?? meta?.regularMarketTime;
+  if (![price, previousClose, timestamp].every((n) => typeof n === 'number' && Number.isFinite(n)) || price <= 0 || previousClose <= 0 || timestamp <= 0) {
+    throw new Error(`No valid index quote for ${symbol}; previous snapshot kept.`);
+  }
+  const change = price - previousClose;
+  return {
+    symbol,
+    label,
+    price,
+    change,
+    percent: (change / previousClose) * 100,
+    quotedAt: new Date(timestamp * 1000).toISOString(),
+  };
+}
+
+export async function fetchIndexQuote({ symbol, label }, { fetchImpl = fetch, sleep = delay } = {}) {
+  const encoded = encodeURIComponent(symbol);
+  const url = new URL(`https://query1.finance.yahoo.com/v8/finance/chart/${encoded}`);
+  url.searchParams.set('range', '1d');
+  url.searchParams.set('interval', '5m');
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let response;
+    try {
+      response = await fetchImpl(url, { signal: AbortSignal.timeout(15000) });
+    } catch {
+      if (attempt === 2) throw new Error(`Index quote request timed out or failed for ${symbol}.`);
+      await sleep(2000 * (attempt + 1));
+      continue;
+    }
+    if (!response.ok) {
+      if ((response.status === 429 || response.status >= 500) && attempt < 2) {
+        const retryAfter = Number(response.headers.get('retry-after'));
+        await sleep(response.status === 429 ? Math.min(Math.max(retryAfter * 1000, 60000), 120000) : 2000 * (attempt + 1));
+        continue;
+      }
+      throw new Error(`Index quote request failed for ${symbol}: HTTP ${response.status}.`);
+    }
+    let data;
+    try { data = await response.json(); } catch { throw new Error(`Invalid JSON for ${symbol}.`); }
+    return normalizeIndexQuote(symbol, label, data);
+  }
+  throw new Error(`Index quote request failed for ${symbol}.`);
+}
+
 export async function updateMarketData({
   apiKey = process.env.FINNHUB_API_KEY,
   outputDir = new URL('../public/data/', import.meta.url),
@@ -55,6 +104,7 @@ export async function updateMarketData({
     { symbol: '^RUT', label: 'Russell 2000' },
   ],
   fetchImpl = fetch,
+  indexFetchImpl = fetchImpl,
   sleep = delay,
 } = {}) {
   if (!apiKey?.trim() || apiKey.includes('your_')) {
@@ -72,8 +122,8 @@ export async function updateMarketData({
   for (const index of indexes) {
     if (!quotes.has(index.symbol)) {
       if (quotes.size) await sleep(1100);
-      const quote = await fetchQuote(index.symbol, apiKey, { fetchImpl, sleep });
-      quotes.set(index.symbol, { ...quote, label: index.label });
+      const quote = await fetchIndexQuote(index, { fetchImpl: indexFetchImpl, sleep });
+      quotes.set(index.symbol, quote);
     }
     indexQuotes.push(quotes.get(index.symbol));
   }
