@@ -4,11 +4,13 @@ export type Quote = {
   change: number;
   percent: number;
   quotedAt?: string;
+  label?: string;
 };
 
 export type MarketPayload = {
   provider: 'finnhub';
   generatedAt: string;
+  indexes: Quote[];
   categories: { name: string; quotes: Quote[] }[];
 };
 
@@ -24,8 +26,19 @@ function validDate(value: unknown): value is string {
 
 export function parseMarketPayload(value: unknown): MarketPayload {
   if (!record(value) || value.provider !== 'finnhub' || !validDate(value.generatedAt) ||
+      !Array.isArray(value.indexes) || value.indexes.length === 0 ||
       !Array.isArray(value.categories) || value.categories.length === 0) {
     throw new Error('Invalid market snapshot');
+  }
+  const indexSymbols = new Set<string>();
+  for (const quote of value.indexes) {
+    if (!record(quote) || typeof quote.symbol !== 'string' || !quote.symbol.trim() ||
+        indexSymbols.has(quote.symbol) || !finite(quote.price) || quote.price <= 0 ||
+        !finite(quote.change) || !finite(quote.percent) ||
+        (quote.quotedAt !== undefined && !validDate(quote.quotedAt))) {
+      throw new Error('Invalid market index quote');
+    }
+    indexSymbols.add(quote.symbol);
   }
   const names = new Set<string>();
   for (const category of value.categories) {

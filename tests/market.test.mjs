@@ -47,27 +47,28 @@ test('failed refresh preserves the previous file; success writes only verified d
   const outputDir = pathToFileURL(`${dir}/`);
   const path = join(dir, 'market.json');
   const watchlist = [{ name: 'One', symbols: ['AAPL'] }, { name: 'Two', symbols: ['AAPL', 'MSFT'] }];
+  const indexes = [{ symbol: '^GSPC', label: 'S&P 500' }];
   try {
     await writeFile(path, 'previous successful snapshot');
-    await assert.rejects(updateMarketData({ apiKey: '', outputDir, watchlist }));
+    await assert.rejects(updateMarketData({ apiKey: '', outputDir, watchlist, indexes }));
     let count = 0;
-    await assert.rejects(updateMarketData({ apiKey: 'test-key', outputDir, watchlist, sleep,
+    await assert.rejects(updateMarketData({ apiKey: 'test-key', outputDir, watchlist, indexes, sleep,
       fetchImpl: async () => Response.json(++count === 1 ? quote : { c: 0 }),
     }));
     assert.equal(await readFile(path, 'utf8'), 'previous successful snapshot');
     count = 0;
-    const payload = await updateMarketData({ apiKey: 'test-key', outputDir, watchlist, sleep,
+    const payload = await updateMarketData({ apiKey: 'test-key', outputDir, watchlist, indexes, sleep,
       fetchImpl: async () => { count += 1; return Response.json(quote); },
     });
-    assert.equal(count, 2);
+    assert.equal(count, 3);
     assert.equal(payload.provider, 'finnhub');
-    assert.equal(payload.indexes, undefined);
+    assert.deepEqual(payload.indexes.map((item) => item.symbol), ['^GSPC']);
     assert.deepEqual(parseMarketPayload(JSON.parse(await readFile(path, 'utf8'))), payload);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test('client rejects mock and malformed snapshots; freshness uses fetch time, not last-trade time', () => {
-  const payload = { provider: 'finnhub', generatedAt: '2026-09-07T15:00:00Z', categories: [{ name: 'One', quotes: [normalizeQuote('AAPL', quote)] }] };
+  const payload = { provider: 'finnhub', generatedAt: '2026-09-07T15:00:00Z', indexes: [normalizeQuote('^GSPC', quote)], categories: [{ name: 'One', quotes: [normalizeQuote('AAPL', quote)] }] };
   assert.equal(parseMarketPayload(payload), payload);
   assert.throws(() => parseMarketPayload({ ...payload, provider: 'mock' }));
   assert.throws(() => parseMarketPayload({ ...payload, categories: [{ name: 'One', quotes: [{}] }] }));

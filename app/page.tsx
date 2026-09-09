@@ -4,7 +4,6 @@
 
 import {
   BarChart3,
-  Bell,
   CalendarDays,
   ChevronDown,
   Download,
@@ -14,7 +13,6 @@ import {
   Menu,
   MoreVertical,
   Plus,
-  Search,
   Settings,
   Sparkles,
   Star,
@@ -47,7 +45,7 @@ const watchlistStorageKey = 'baybell-watchlists-v1';
 // This is only a public navigation URL. Authentication belongs to the report host.
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
 const baybellHome = process.env.NEXT_PUBLIC_BAYBELL_HOME === '1';
-const featuredIndexSymbols = ['QQQ', 'SPY', 'DIA', 'IWM', 'SMH'];
+const featuredIndexSymbols = ['^GSPC', '^IXIC', '^DJI', '^RUT'];
 
 const earnings = {
   todayBefore: [
@@ -200,6 +198,7 @@ function makeSparklinePoints(quote: Quote) {
 export default function Home() {
   const [page, setPage] = useState<Page>('overview');
   const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [indexes, setIndexes] = useState<Quote[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [now, setNow] = useState(0);
@@ -228,7 +227,8 @@ export default function Home() {
         if (!response.ok) throw new Error('Snapshot unavailable');
         const payload = parseMarketPayload(await response.json());
         if (stopped) return;
-        feedQuotes.current = payload.categories.flatMap((category) => category.quotes);
+        setIndexes(payload.indexes);
+        feedQuotes.current = [...payload.indexes, ...payload.categories.flatMap((category) => category.quotes)];
         const quotesBySymbol = new Map(feedQuotes.current.map((quote) => [quote.symbol, quote]));
         if (!loaded.current) {
           const stored = readStoredWatchlists();
@@ -274,12 +274,12 @@ export default function Home() {
   }, [categories]);
 
   const indexQuotes = useMemo(() => {
-    const quotesBySymbol = new Map(categories.flatMap((category) => category.quotes).map((quote) => [quote.symbol, quote]));
+    const quotesBySymbol = new Map(indexes.map((quote) => [quote.symbol, quote]));
     return featuredIndexSymbols.flatMap((symbol) => {
       const quote = quotesBySymbol.get(symbol);
       return quote ? [quote] : [];
     });
-  }, [categories]);
+  }, [indexes]);
 
   function updateCategories(updater: (current: Category[]) => Category[]) {
     setCategories((current) => {
@@ -411,11 +411,6 @@ export default function Home() {
       </aside>
 
       <section className="workspace">
-        <TopBar status={dataStatus} />
-        <output className={`data-notice ${loadError || stale ? 'data-notice-warning' : ''}`}>
-          {loadError ? (generatedAt ? 'Could not check for updates. Showing the last successful snapshot.' : 'No verified quotes available. Run the Finnhub data update and try again.') : stale ? 'The snapshot is over two hours old. The scheduled update may be delayed.' : 'Hourly Finnhub snapshots · not streaming. Quote timestamps may be older when markets are closed.'}
-          {page !== 'overview' && <strong> Events and reports below are demo content, not current market information.</strong>}
-        </output>
         {page === 'overview' && (
           <Overview
             activeFilter={activeFilter}
@@ -486,28 +481,6 @@ export default function Home() {
   );
 }
 
-function TopBar({ status }: { status: string }) {
-  return (
-    <header className="topbar">
-      <div className="search-box">
-        <Search size={17} />
-        <span>Search symbols</span>
-      </div>
-      <div className="top-status">
-        <span className="status-dot" />
-        <span>{status}</span>
-      </div>
-      <div className="theme-toggle">
-        <button>Light</button>
-        <button className="active">Dark</button>
-      </div>
-      <div className="top-icons">
-        <Bell size={18} />
-      </div>
-    </header>
-  );
-}
-
 function NavItem({
   active,
   icon,
@@ -548,11 +521,11 @@ function Overview({
   return (
     <div className="page-content">
       {indexQuotes.length > 0 && (
-        <div className="index-deck" aria-label="Index ETF quotes">
+        <div className="index-deck" aria-label="Major index quotes">
           {indexQuotes.map((quote) => (
             <article className={`index-card ${quote.change < 0 ? 'negative' : ''}`} key={quote.symbol}>
               <div>
-                <span>{quote.symbol}</span>
+                <span>{quote.label ?? quote.symbol}</span>
                 <strong>{formatPrice(quote.price)}</strong>
                 <em>{formatSigned(quote.change)} · {formatSigned(quote.percent)}%</em>
               </div>

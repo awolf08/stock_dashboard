@@ -48,6 +48,12 @@ export async function updateMarketData({
   apiKey = process.env.FINNHUB_API_KEY,
   outputDir = new URL('../public/data/', import.meta.url),
   watchlist,
+  indexes = [
+    { symbol: '^GSPC', label: 'S&P 500' },
+    { symbol: '^IXIC', label: 'Nasdaq' },
+    { symbol: '^DJI', label: 'Dow' },
+    { symbol: '^RUT', label: 'Russell 2000' },
+  ],
   fetchImpl = fetch,
   sleep = delay,
 } = {}) {
@@ -62,6 +68,15 @@ export async function updateMarketData({
     throw new Error('Invalid config/watchlist.json. Use unique category names and unique symbols in each category.');
   }
   const quotes = new Map();
+  const indexQuotes = [];
+  for (const index of indexes) {
+    if (!quotes.has(index.symbol)) {
+      if (quotes.size) await sleep(1100);
+      const quote = await fetchQuote(index.symbol, apiKey, { fetchImpl, sleep });
+      quotes.set(index.symbol, { ...quote, label: index.label });
+    }
+    indexQuotes.push(quotes.get(index.symbol));
+  }
   const categories = [];
   for (const group of watchlist) {
     const groupQuotes = [];
@@ -74,7 +89,7 @@ export async function updateMarketData({
     }
     categories.push({ name: group.name, quotes: groupQuotes });
   }
-  const payload = { schemaVersion: 1, generatedAt: new Date().toISOString(), provider: 'finnhub', categories };
+  const payload = { schemaVersion: 1, generatedAt: new Date().toISOString(), provider: 'finnhub', indexes: indexQuotes, categories };
   await mkdir(outputDir, { recursive: true });
   const temporaryFile = new URL('market.json.tmp', outputDir);
   await writeFile(temporaryFile, `${JSON.stringify(payload, null, 2)}\n`);
