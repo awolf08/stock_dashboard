@@ -104,6 +104,10 @@ function formatSigned(value: number) {
   return `${sign}${value.toFixed(2)}`;
 }
 
+function yahooChartUrl(symbol: string) {
+  return `https://finance.yahoo.com/chart/${encodeURIComponent(symbol)}?range=1y`;
+}
+
 function isAccent(value: unknown): value is Accent {
   return typeof value === 'string' && value in accentClass;
 }
@@ -523,7 +527,7 @@ function Overview({
       {indexQuotes.length > 0 && (
         <div className="index-deck" aria-label="Major index quotes">
           {indexQuotes.map((quote) => (
-            <article className={`index-card ${quote.change < 0 ? 'negative' : ''}`} key={quote.symbol}>
+            <a className={`index-card ${quote.change < 0 ? 'negative' : ''}`} key={quote.symbol} href={yahooChartUrl(quote.symbol)} target="_blank" rel="noreferrer" aria-label={`Open ${quote.label ?? quote.symbol} 1 year candle chart on Yahoo Finance`}>
               <div>
                 <span>{quote.label ?? quote.symbol}</span>
                 <strong>{formatPrice(quote.price)}</strong>
@@ -533,7 +537,7 @@ function Overview({
                 <line x1="0" x2="80" y1="46" y2="46" />
                 <polyline points={makeSparklinePoints(quote)} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </article>
+            </a>
           ))}
         </div>
       )}
@@ -595,7 +599,7 @@ function QuotePanel({
       </div>
       {category.quotes.map((quote) => (
         <div className="quote-row" key={quote.symbol}>
-          <strong title={quote.quotedAt ? `Quote time: ${new Date(quote.quotedAt).toLocaleString()}` : 'Quote time unavailable; regenerate the snapshot to include it.'}>{quote.symbol}</strong>
+          <a className="symbol-link" href={yahooChartUrl(quote.symbol)} target="_blank" rel="noreferrer" title={quote.quotedAt ? `Quote time: ${new Date(quote.quotedAt).toLocaleString()}` : 'Quote time unavailable; regenerate the snapshot to include it.'} aria-label={`Open ${quote.symbol} 1 year candle chart on Yahoo Finance`}>{quote.symbol}</a>
           <span className="number">{formatPrice(quote.price)}</span>
           <span className={`number ${quote.change >= 0 ? 'up' : 'down'}`}>{formatSigned(quote.change)}</span>
           <span className={`number ${quote.percent >= 0 ? 'up' : 'down'}`}>{formatSigned(quote.percent)}%</span>
