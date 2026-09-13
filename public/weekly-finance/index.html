@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekly Finance · Baybell Dashboard</title>
+  <style>
+    :root { color-scheme: dark; --bg:#020916; --panel:#071527; --border:rgba(132,169,208,.2); --text:#eef5ff; --muted:#9fb0c5; --blue:#2b9aff; --green:#57df91; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 50% 0%, rgba(25,110,190,.16), transparent 34%), linear-gradient(135deg,#010611 0%,#061120 48%,#020916 100%); color:var(--text); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .shell { display:grid; grid-template-columns:268px minmax(0,1fr); min-height:100vh; }
+    aside { background:linear-gradient(180deg,rgba(6,20,38,.98),rgba(2,9,22,.98)); border-right:1px solid rgba(132,169,208,.16); padding-bottom:24px; }
+    .brand { display:flex; align-items:center; gap:12px; height:70px; padding:0 22px; border-bottom:1px solid rgba(132,169,208,.12); color:#f4f8ff; font-size:18px; font-weight:700; text-decoration:none; }
+    .brand-icon { width:24px; height:24px; border-radius:7px; background:linear-gradient(135deg,#1d8fff,#26e0c2); box-shadow:0 0 20px rgba(43,154,255,.35); }
+    nav { display:grid; gap:8px; padding:24px 14px 20px; }
+    nav a { display:flex; align-items:center; gap:14px; min-height:44px; border:1px solid transparent; border-radius:6px; color:#c8d4e3; padding:0 14px; text-decoration:none; }
+    nav a.active, nav a:hover { border-color:rgba(64,155,255,.32); background:linear-gradient(90deg,rgba(20,117,220,.55),rgba(18,67,121,.25)); color:white; box-shadow:inset 3px 0 0 #2497ff; }
+    main { min-width:0; padding:26px 28px 34px; overflow:auto; }
+    .hero { display:flex; justify-content:space-between; gap:20px; align-items:center; margin-bottom:24px; }
+    .eyebrow { color:var(--green); font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    h1 { margin:8px 0; font-size:28px; }
+    p { color:var(--muted); line-height:1.6; margin:0; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .button { display:inline-flex; align-items:center; min-height:38px; border:1px solid rgba(132,169,208,.22); border-radius:6px; background:rgba(4,13,27,.62); color:#dce6f3; padding:0 16px; text-decoration:none; }
+    .button.primary { border-color:rgba(64,155,255,.58); background:linear-gradient(180deg,rgba(29,143,255,.78),rgba(15,73,140,.78)); color:white; }
+    .grid { display:grid; gap:16px; }
+    .card { border:1px solid var(--border); border-radius:7px; background:linear-gradient(180deg,rgba(9,25,45,.78),rgba(4,13,27,.78)); box-shadow:0 16px 38px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.03); overflow:hidden; }
+    .card-title { min-height:54px; display:flex; align-items:center; border-bottom:1px solid rgba(132,169,208,.16); padding:0 18px; }
+    h2 { margin:0; font-size:17px; }
+    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:14px; border-bottom:1px solid rgba(132,169,208,.12); }
+    .metric, .box { border:1px solid rgba(132,169,208,.14); border-radius:7px; background:rgba(5,16,31,.66); padding:14px; }
+    .metric span { color:#8fa1b8; font-size:12px; display:block; margin-bottom:6px; }
+    .metric strong { font-size:18px; }
+    .sections { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:14px; }
+    h3 { margin:0 0 12px; font-size:14px; }
+    ul { margin:0; padding-left:18px; display:grid; gap:9px; color:#abb8c9; line-height:1.55; }
+    .footer-note { margin-top:18px; color:#7f8fa4; font-size:13px; }
+    @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <a class="brand" href="/"><span class="brand-icon"></span><span>鬼谷仙 Dashboard</span></a>
+      <nav>
+        <a href="/">Overview</a>
+        <a href="/#events">Events</a>
+        <a href="/daily-finance/">Daily Finance</a>
+        <a class="active" href="/weekly-finance/">Weekly Finance</a>
+        <a href="/guru-position/">Guru Positions</a>
+        <a href="https://options.baybell.com">Options</a>
+        <a href="https://baybell.com/private/">Private Reports</a>
+      </nav>
+    </aside>
+    <main>
+      <section class="hero">
+        <div><span class="eyebrow">Weekly Finance</span><h1>Next Week Market Outlook</h1><p>A weekly forecast template for index direction, macro drivers, earnings focus, and scenario planning.</p></div>
+        <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="https://baybell.com/private/">Private Login</a></div>
+      </section>
+      <section class="grid">
+        <article class="card"><div class="card-title"><h2>Weekly Forecast Template</h2></div><div class="metrics"><div class="metric"><span>Publish Time</span><strong>Weekend</strong></div><div class="metric"><span>Focus</span><strong>Next Week</strong></div><div class="metric"><span>Output</span><strong>Forecast + Plan</strong></div></div><div class="sections"><section class="box"><h3>Executive View</h3><p>State the weekly bias for the major indexes, the confidence level, and the main reason behind the view.</p></section><section class="box"><h3>Index Roadmap</h3><p>Map SPY, QQQ, DIA, and IWM with upside levels, downside levels, momentum condition, and invalidation points.</p></section><section class="box"><h3>Key Drivers</h3><ul><li>Macro calendar: inflation, jobs, GDP, PMI, Fed speakers, Treasury auctions, and oil inventory data.</li><li>Earnings calendar: watchlist names, mega-cap earnings, semiconductor, cloud, finance, and consumer bellwethers.</li><li>Technical map: weekly trend, support/resistance, moving averages, breadth, volatility, and failed-breakout risk.</li><li>Scenario plan: base case, bullish case, bearish case, trigger levels, and what would change the view.</li></ul></section><section class="box"><h3>Trading Scenarios</h3><p>Write the base, bullish, and bearish scenarios so the weekly view can be updated quickly when price or macro data changes.</p></section></div></article>
+        <article class="card"><div class="card-title"><h2>Portfolio and Watchlist Plan</h2></div><div class="metrics"><div class="metric"><span>Universe</span><strong>Indexes + Sectors</strong></div><div class="metric"><span>Review</span><strong>Weekly</strong></div><div class="metric"><span>Risk</span><strong>Scenario Based</strong></div></div><div class="sections"><section class="box"><h3>Sector Focus</h3><p>Identify the strongest sectors, weakest sectors, rotation candidates, and whether risk appetite favors growth, value, defensives, or small caps.</p></section><section class="box"><h3>Earnings Focus</h3><p>Highlight upcoming earnings that can move watchlist groups or indexes, especially AI, cloud, semiconductors, finance, and consumer leaders.</p></section><section class="box"><h3>Position Planning</h3><ul><li>Indexes and ETFs to monitor: SPY, QQQ, DIA, IWM, SMH, SOXL, IGV, TQQQ, UPRO.</li><li>Leadership check: AI leaders, cloud and infrastructure, fintech, brokers, China ADR, crypto-linked equities.</li><li>Risk controls: position size, event exposure, gap risk, correlation, and maximum drawdown tolerance.</li></ul></section><section class="box"><h3>Follow-up Checklist</h3><p>Update the weekly thesis after major macro data, after the first two trading sessions, and after any break above or below the weekly levels.</p></section></div></article>
+      </section>
+      <p class="footer-note">Template v1. Automation/data generation can be added later without changing the URL.</p>
+    </main>
+  </div>
+</body>
+</html>
