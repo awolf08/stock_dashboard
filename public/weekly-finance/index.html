@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Weekly Finance · Baybell Dashboard</title>
   <style>
-    :root { color-scheme: dark; --bg:#020916; --panel:#071527; --border:rgba(132,169,208,.2); --text:#eef5ff; --muted:#9fb0c5; --blue:#2b9aff; --green:#57df91; }
+    :root { color-scheme: dark; --bg:#020916; --panel:#071527; --border:rgba(132,169,208,.2); --text:#eef5ff; --muted:#9fb0c5; --blue:#2b9aff; --green:#57df91; --red:#ff5b48; --amber:#f7b731; }
     * { box-sizing: border-box; }
     body { margin:0; min-height:100vh; background:radial-gradient(circle at 50% 0%, rgba(25,110,190,.16), transparent 34%), linear-gradient(135deg,#010611 0%,#061120 48%,#020916 100%); color:var(--text); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     .shell { display:grid; grid-template-columns:268px minmax(0,1fr); min-height:100vh; }
@@ -24,18 +24,25 @@
     .button { display:inline-flex; align-items:center; min-height:38px; border:1px solid rgba(132,169,208,.22); border-radius:6px; background:rgba(4,13,27,.62); color:#dce6f3; padding:0 16px; text-decoration:none; }
     .button.primary { border-color:rgba(64,155,255,.58); background:linear-gradient(180deg,rgba(29,143,255,.78),rgba(15,73,140,.78)); color:white; }
     .grid { display:grid; gap:16px; }
+    .two { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
     .card { border:1px solid var(--border); border-radius:7px; background:linear-gradient(180deg,rgba(9,25,45,.78),rgba(4,13,27,.78)); box-shadow:0 16px 38px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.03); overflow:hidden; }
-    .card-title { min-height:54px; display:flex; align-items:center; border-bottom:1px solid rgba(132,169,208,.16); padding:0 18px; }
+    .card-title { min-height:54px; display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(132,169,208,.16); padding:0 18px; }
     h2 { margin:0; font-size:17px; }
-    .metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:14px; border-bottom:1px solid rgba(132,169,208,.12); }
+    .stamp { color:#8fa1b8; font-size:12px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; padding:14px; border-bottom:1px solid rgba(132,169,208,.12); }
     .metric, .box { border:1px solid rgba(132,169,208,.14); border-radius:7px; background:rgba(5,16,31,.66); padding:14px; }
     .metric span { color:#8fa1b8; font-size:12px; display:block; margin-bottom:6px; }
     .metric strong { font-size:18px; }
     .sections { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:14px; }
     h3 { margin:0 0 12px; font-size:14px; }
     ul { margin:0; padding-left:18px; display:grid; gap:9px; color:#abb8c9; line-height:1.55; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { padding:11px 14px; border-top:1px solid rgba(132,169,208,.12); text-align:left; }
+    th { color:#8fa1b8; font-weight:500; }
+    td { color:#dce6f3; }
+    .up { color:var(--green); } .down { color:var(--red); } .amber { color:var(--amber); }
     .footer-note { margin-top:18px; color:#7f8fa4; font-size:13px; }
-    @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics { grid-template-columns:1fr; } }
+    @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics, .two { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
@@ -44,7 +51,7 @@
       <a class="brand" href="/"><span class="brand-icon"></span><span>鬼谷仙 Dashboard</span></a>
       <nav>
         <a href="/">Overview</a>
-        <a href="/#events">Events</a>
+        <a href="/?page=events">Events</a>
         <a href="/daily-finance/">Daily Finance</a>
         <a class="active" href="/weekly-finance/">Weekly Finance</a>
         <a href="/guru-position/">Guru Positions</a>
@@ -54,14 +61,41 @@
     </aside>
     <main>
       <section class="hero">
-        <div><span class="eyebrow">Weekly Finance</span><h1>Next Week Market Outlook</h1><p>A weekly forecast template for index direction, macro drivers, earnings focus, and scenario planning.</p></div>
+        <div><span class="eyebrow">Weekly Finance · Real Data</span><h1>Next Week Market Outlook</h1><p>Generated from the latest market snapshot and Finnhub earnings calendar. Macro calendar is not connected yet, so the outlook focuses on price action, breadth, sector groups, and known earnings risk.</p></div>
         <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="https://baybell.com/private/">Private Login</a></div>
       </section>
       <section class="grid">
-        <article class="card"><div class="card-title"><h2>Weekly Forecast Template</h2></div><div class="metrics"><div class="metric"><span>Publish Time</span><strong>Weekend</strong></div><div class="metric"><span>Focus</span><strong>Next Week</strong></div><div class="metric"><span>Output</span><strong>Forecast + Plan</strong></div></div><div class="sections"><section class="box"><h3>Executive View</h3><p>State the weekly bias for the major indexes, the confidence level, and the main reason behind the view.</p></section><section class="box"><h3>Index Roadmap</h3><p>Map SPY, QQQ, DIA, and IWM with upside levels, downside levels, momentum condition, and invalidation points.</p></section><section class="box"><h3>Key Drivers</h3><ul><li>Macro calendar: inflation, jobs, GDP, PMI, Fed speakers, Treasury auctions, and oil inventory data.</li><li>Earnings calendar: watchlist names, mega-cap earnings, semiconductor, cloud, finance, and consumer bellwethers.</li><li>Technical map: weekly trend, support/resistance, moving averages, breadth, volatility, and failed-breakout risk.</li><li>Scenario plan: base case, bullish case, bearish case, trigger levels, and what would change the view.</li></ul></section><section class="box"><h3>Trading Scenarios</h3><p>Write the base, bullish, and bearish scenarios so the weekly view can be updated quickly when price or macro data changes.</p></section></div></article>
-        <article class="card"><div class="card-title"><h2>Portfolio and Watchlist Plan</h2></div><div class="metrics"><div class="metric"><span>Universe</span><strong>Indexes + Sectors</strong></div><div class="metric"><span>Review</span><strong>Weekly</strong></div><div class="metric"><span>Risk</span><strong>Scenario Based</strong></div></div><div class="sections"><section class="box"><h3>Sector Focus</h3><p>Identify the strongest sectors, weakest sectors, rotation candidates, and whether risk appetite favors growth, value, defensives, or small caps.</p></section><section class="box"><h3>Earnings Focus</h3><p>Highlight upcoming earnings that can move watchlist groups or indexes, especially AI, cloud, semiconductors, finance, and consumer leaders.</p></section><section class="box"><h3>Position Planning</h3><ul><li>Indexes and ETFs to monitor: SPY, QQQ, DIA, IWM, SMH, SOXL, IGV, TQQQ, UPRO.</li><li>Leadership check: AI leaders, cloud and infrastructure, fintech, brokers, China ADR, crypto-linked equities.</li><li>Risk controls: position size, event exposure, gap risk, correlation, and maximum drawdown tolerance.</li></ul></section><section class="box"><h3>Follow-up Checklist</h3><p>Update the weekly thesis after major macro data, after the first two trading sessions, and after any break above or below the weekly levels.</p></section></div></article>
+        <article class="card"><div class="card-title"><h2>Data-driven Weekly Forecast</h2><span class="stamp">Generated Sep 13, 2026, 10:47 AM</span></div><div class="metrics"><div class="metric"><span>Bias</span><strong>Neutral</strong></div><div class="metric"><span>Confidence</span><strong>Low-to-medium</strong></div><div class="metric"><span>Index Avg</span><strong class="up">0.00%</strong></div><div class="metric"><span>Watchlist Breadth</span><strong>33%</strong></div></div><div class="sections"><section class="box"><h3>Executive View</h3><p>The model reads the latest quote snapshot as <strong>Neutral</strong>. Major index average is <strong class="up">0.00%</strong>, while watchlist breadth is <strong>33%</strong>. Strongest group: <strong>Semiconductors</strong>. Weakest group: <strong>Cloud &amp; Infra</strong>.</p></section><section class="box"><h3>Scenario Plan</h3><ul><li>Base case: follow the current breadth signal until indexes reverse through the prior snapshot direction.</li><li>Bullish trigger: indexes and leading groups both close positive, with breadth above 60%.</li><li>Bearish trigger: index average falls below -0.5% and leadership narrows under 45% breadth.</li><li>Event risk: 0 watchlist/high-impact earnings events are in the calendar window.</li></ul></section></div></article>
+        <article class="card"><div class="card-title"><h2>Major Index / ETF Roadmap</h2><span class="stamp">Market data Sep 7, 2026, 2:13 PM</span></div><table><thead><tr><th>Symbol</th><th>Price</th><th>Move</th><th>Read</th></tr></thead><tbody></tbody></table></article>
+        <div class="two"><article class="card"><div class="card-title"><h2>Strongest Groups</h2></div><table><thead><tr><th>Group</th><th>Avg Move</th><th>Breadth</th></tr></thead><tbody><tr><td>Semiconductors</td><td class="up">+3.36%</td><td>5/5 up</td></tr>
+<tr><td>AI Leaders</td><td class="down">-0.31%</td><td>2/5 up</td></tr>
+<tr><td>Cybersecurity</td><td class="down">-0.98%</td><td>2/5 up</td></tr>
+<tr><td>Energy &amp; Utilities</td><td class="down">-1.15%</td><td>0/5 up</td></tr>
+<tr><td>FinTech</td><td class="down">-1.41%</td><td>0/5 up</td></tr>
+<tr><td>Cloud &amp; Infra</td><td class="down">-1.63%</td><td>1/5 up</td></tr></tbody></table></article><article class="card"><div class="card-title"><h2>Weakest Groups</h2></div><table><thead><tr><th>Group</th><th>Avg Move</th><th>Breadth</th></tr></thead><tbody><tr><td>Cloud &amp; Infra</td><td class="down">-1.63%</td><td>1/5 up</td></tr>
+<tr><td>FinTech</td><td class="down">-1.41%</td><td>0/5 up</td></tr>
+<tr><td>Energy &amp; Utilities</td><td class="down">-1.15%</td><td>0/5 up</td></tr>
+<tr><td>Cybersecurity</td><td class="down">-0.98%</td><td>2/5 up</td></tr>
+<tr><td>AI Leaders</td><td class="down">-0.31%</td><td>2/5 up</td></tr>
+<tr><td>Semiconductors</td><td class="up">+3.36%</td><td>5/5 up</td></tr></tbody></table></article></div>
+        <div class="two"><article class="card"><div class="card-title"><h2>Top Watchlist Movers</h2></div><table><thead><tr><th>Symbol</th><th>Group</th><th>Move</th></tr></thead><tbody><tr><td>AMD</td><td>Semiconductors</td><td class="up">+4.69%</td></tr>
+<tr><td>SMCI</td><td>Semiconductors</td><td class="up">+4.54%</td></tr>
+<tr><td>INTC</td><td>Semiconductors</td><td class="up">+4.51%</td></tr>
+<tr><td>ORCL</td><td>Cloud &amp; Infra</td><td class="up">+3.08%</td></tr>
+<tr><td>TSM</td><td>Semiconductors</td><td class="up">+2.85%</td></tr>
+<tr><td>META</td><td>AI Leaders</td><td class="up">+1.00%</td></tr>
+<tr><td>NVDA</td><td>AI Leaders</td><td class="up">+0.84%</td></tr>
+<tr><td>PANW</td><td>Cybersecurity</td><td class="up">+0.40%</td></tr></tbody></table></article><article class="card"><div class="card-title"><h2>Weak Watchlist Movers</h2></div><table><thead><tr><th>Symbol</th><th>Group</th><th>Move</th></tr></thead><tbody><tr><td>SNOW</td><td>Cloud &amp; Infra</td><td class="down">-5.41%</td></tr>
+<tr><td>ZS</td><td>Cybersecurity</td><td class="down">-4.50%</td></tr>
+<tr><td>PYPL</td><td>FinTech</td><td class="down">-3.27%</td></tr>
+<tr><td>NOW</td><td>Cloud &amp; Infra</td><td class="down">-2.97%</td></tr>
+<tr><td>MSFT</td><td>AI Leaders</td><td class="down">-2.04%</td></tr>
+<tr><td>CRM</td><td>Cloud &amp; Infra</td><td class="down">-1.97%</td></tr>
+<tr><td>XOM</td><td>Energy &amp; Utilities</td><td class="down">-1.69%</td></tr>
+<tr><td>CVX</td><td>Energy &amp; Utilities</td><td class="down">-1.29%</td></tr></tbody></table></article></div>
+        <article class="card"><div class="card-title"><h2>Next Earnings Risk</h2><span class="stamp">Events data Not available</span></div><table><thead><tr><th>Date</th><th>Symbol</th><th>Time</th><th>Impact</th></tr></thead><tbody><tr><td colspan="4">No earnings events available in the current feed.</td></tr></tbody></table></article>
       </section>
-      <p class="footer-note">Template v1. Automation/data generation can be added later without changing the URL.</p>
+      <p class="footer-note">This page is generated during deploy from verified quote and earnings JSON. It is an informational market briefing template, not investment advice.</p>
     </main>
   </div>
 </body>

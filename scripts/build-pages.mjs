@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { generateWeeklyFinance } from './generate-weekly-finance.mjs';
 import { readFile, writeFile, access, rename, rm } from 'node:fs/promises';
 
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
@@ -12,6 +13,7 @@ if (privateReportsUrl) {
 if (basePath && !/^\/[A-Za-z0-9._-]+$/.test(basePath)) {
   throw new Error('NEXT_PUBLIC_BASE_PATH must be empty or a single /repository-name path.');
 }
+await generateWeeklyFinance();
 const buildEnv = { ...process.env, STATIC_EXPORT: '1', NEXT_PUBLIC_BASE_PATH: basePath };
 delete buildEnv.FINNHUB_API_KEY;
 const result = spawnSync(process.execPath, ['node_modules/vinext/dist/cli.js', 'build'], {
