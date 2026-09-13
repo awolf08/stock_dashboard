@@ -57,6 +57,10 @@ jobs:
         run: pnpm fetch:data
         env:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+      - name: Fetch verified events
+        run: pnpm fetch:events
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5

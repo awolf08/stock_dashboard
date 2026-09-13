@@ -1078,3 +1078,5 @@ button {
 }
 .data-notice-warning { color: #ffdc9a; border-color: #806532; }
 .dialog-note { color: #b5c5d8; font-size: 14px; line-height: 1.5; }
+
+.muted-text { color: #7f8fa4; font-size: 13px; }

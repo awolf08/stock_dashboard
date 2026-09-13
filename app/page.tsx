@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import watchlist from '../config/watchlist.json';
+import { parseEventsPayload, type EarningsEvent } from '../lib/events';
 import { parseMarketPayload, snapshotIsStale, type Quote } from '../lib/market';
 
 type Page = 'overview' | 'events' | 'reports';
@@ -46,36 +47,6 @@ const watchlistStorageKey = 'baybell-watchlists-v1';
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
 const baybellHome = process.env.NEXT_PUBLIC_BAYBELL_HOME === '1';
 const featuredIndexSymbols = ['^GSPC', '^IXIC', '^DJI', '^RUT'];
-
-const earnings = {
-  todayBefore: [
-    ['WDAY', 'Workday', '$1.74', '$2.09B', '7:15 AM', 'High'],
-    ['ADI', 'Analog Devices', '$1.85', '$2.42B', '7:00 AM', 'High'],
-    ['DELL', 'Dell Technologies', '$1.32', '$23.6B', '6:30 AM', 'Medium'],
-  ],
-  todayAfter: [
-    ['NVDA', 'NVIDIA', '$0.64', '$24.6B', '4:05 PM', 'High'],
-    ['SNOW', 'Snowflake', '$0.21', '$857M', '4:10 PM', 'Medium'],
-    ['MSFT', 'Microsoft', '$2.81', '$61.1B', '4:05 PM', 'High'],
-  ],
-  tomorrowBefore: [
-    ['DELL', 'Dell Technologies', '$1.60', '$23.9B', '6:30 AM', 'High'],
-    ['ADI', 'Analog Devices', '$1.71', '$2.45B', '7:00 AM', 'High'],
-  ],
-  tomorrowAfter: [
-    ['AMZN', 'Amazon.com', '$0.98', '$155.2B', '4:05 PM', 'High'],
-    ['GOOGL', 'Alphabet', '$1.39', '$77.8B', '4:05 PM', 'High'],
-  ],
-};
-
-const otherEvents = [
-  ['Macro', 'Fed Chair Powell Speaks', '10:00 AM ET', 'High'],
-  ['Economic Data', 'Retail Sales (MoM)', '8:30 AM ET', 'High'],
-  ['Economic Data', 'Industrial Production', '9:15 AM ET', 'Medium'],
-  ['Investor Day', 'Apple Investor Day', '10:00 AM ET', 'High'],
-  ['Company', "Salesforce Spring '25 Release", '11:00 AM ET', 'Medium'],
-  ['Ex-Dividend', 'Johnson & Johnson', '12:00 AM ET', 'Low'],
-];
 
 const historyRows = [
   ['Daily After-hours Report', 'May 16, 2025', '07:45 PM ET', 'Mixed close as tech strength offsets energy weakness'],
@@ -110,6 +81,28 @@ function yahooChartUrl(symbol: string) {
 
 function isAccent(value: unknown): value is Accent {
   return typeof value === 'string' && value in accentClass;
+}
+
+
+function todayInPacific() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
+function addDaysToDay(day: string, days: number) {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDayLabel(day: string) {
+  return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${day}T00:00:00Z`));
+}
+
+function formatEventNumber(value: number | undefined, currency = false) {
+  if (value === undefined) return '—';
+  if (currency && Math.abs(value) >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  if (currency && Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  return currency ? `$${value.toFixed(0)}` : value.toFixed(2);
 }
 
 function readStoredWatchlists(): StoredCategory[] | null {
@@ -205,6 +198,9 @@ export default function Home() {
   const [indexes, setIndexes] = useState<Quote[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [earningsEvents, setEarningsEvents] = useState<EarningsEvent[]>([]);
+  const [eventsGeneratedAt, setEventsGeneratedAt] = useState<string | null>(null);
+  const [eventsError, setEventsError] = useState(false);
   const [now, setNow] = useState(0);
   const [symbolError, setSymbolError] = useState('');
   const feedQuotes = useRef<Quote[]>([]);
@@ -263,6 +259,36 @@ export default function Home() {
       }
     }
     void refresh();
+    return () => { stopped = true; clearTimeout(timer); request?.abort(); };
+  }, []);
+
+
+  useEffect(() => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    let request: AbortController | undefined;
+    async function refreshEvents() {
+      request = new AbortController();
+      const timeout = setTimeout(() => request?.abort(), 15000);
+      try {
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+        const response = await fetch(`${basePath}/data/events.json?check=${Date.now()}`, {
+          cache: 'no-store', signal: request.signal,
+        });
+        if (!response.ok) throw new Error('Events unavailable');
+        const payload = parseEventsPayload(await response.json());
+        if (stopped) return;
+        setEarningsEvents(payload.earnings);
+        setEventsGeneratedAt(payload.generatedAt);
+        setEventsError(false);
+      } catch {
+        if (!stopped) setEventsError(true);
+      } finally {
+        clearTimeout(timeout);
+        if (!stopped) timer = setTimeout(refreshEvents, 5 * 60 * 1000);
+      }
+    }
+    void refreshEvents();
     return () => { stopped = true; clearTimeout(timer); request?.abort(); };
   }, []);
 
@@ -426,7 +452,7 @@ export default function Home() {
             onSetFilter={setActiveFilter}
           />
         )}
-        {page === 'events' && <Events />}
+        {page === 'events' && <Events earnings={earningsEvents} generatedAt={eventsGeneratedAt} hasError={eventsError} />}
         {page === 'reports' && <Reports />}
       </section>
 
@@ -613,73 +639,112 @@ function QuotePanel({
   );
 }
 
-function Events() {
+function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]; generatedAt: string | null; hasError: boolean }) {
+  const [activeFilter, setActiveFilter] = useState('Today');
+  const today = todayInPacific();
+  const tomorrow = addDaysToDay(today, 1);
+  const filterButtons = ['Today', 'Tomorrow', 'This Week', 'Watchlist Only', 'High Impact'];
+  const filteredEarnings = earnings.filter((event) => {
+    if (activeFilter === 'Today') return event.date === today;
+    if (activeFilter === 'Tomorrow') return event.date === tomorrow;
+    if (activeFilter === 'Watchlist Only') return event.watchlistMatch;
+    if (activeFilter === 'High Impact') return event.impact === 'High';
+    return true;
+  });
+  const todayEvents = earnings.filter((event) => event.date === today);
+  const tomorrowEvents = earnings.filter((event) => event.date === tomorrow);
+  const watchlistEvents = earnings.filter((event) => event.watchlistMatch).slice(0, 8);
+  const days = Array.from(new Set(earnings.map((event) => event.date))).slice(0, 7);
   return (
     <div className="page-content">
       <div className="page-heading">
         <h1>Events</h1>
         <div className="action-row left">
-          {['Today', 'Tomorrow', 'This Week', 'Watchlist Only', 'High Impact'].map((label, index) => (
-            <button className={`filter-button ${index === 0 ? 'active' : ''}`} key={label}>
+          {filterButtons.map((label) => (
+            <button className={`filter-button ${activeFilter === label ? 'active' : ''}`} key={label} onClick={() => setActiveFilter(label)}>
               {label}
             </button>
           ))}
         </div>
       </div>
+      <div className={`data-notice ${hasError ? 'data-notice-warning' : ''}`}>
+        {hasError
+          ? 'Could not load verified earnings events. The next GitHub update will try again.'
+          : generatedAt
+            ? `Finnhub earnings calendar · updated ${new Date(generatedAt).toLocaleString()}`
+            : 'Loading verified earnings events…'}
+      </div>
       <div className="events-grid">
         <article className="data-card earnings-card">
           <div className="card-title">
             <h2>Earnings Calendar</h2>
-            <button className="link-button">View Full Earnings Calendar</button>
+            <a className="link-button" href="https://finance.yahoo.com/calendar/earnings" target="_blank" rel="noreferrer">View Full Earnings Calendar</a>
           </div>
           <div className="earnings-layout">
-            <EarningsDay title="Today" date="May 16, 2025" before={earnings.todayBefore} after={earnings.todayAfter} />
-            <EarningsDay title="Tomorrow" date="May 17, 2025" before={earnings.tomorrowBefore} after={earnings.tomorrowAfter} />
+            <EarningsDay title="Today" date={formatDayLabel(today)} before={todayEvents.filter((event) => event.session === 'before-open')} after={todayEvents.filter((event) => event.session !== 'before-open')} />
+            <EarningsDay title="Tomorrow" date={formatDayLabel(tomorrow)} before={tomorrowEvents.filter((event) => event.session === 'before-open')} after={tomorrowEvents.filter((event) => event.session !== 'before-open')} />
           </div>
         </article>
         <article className="data-card">
           <div className="card-title">
-            <h2>Other Events</h2>
-            <button className="link-button">View All Events</button>
-          </div>
-          <div className="event-tabs">
-            {['Macro', 'Company', 'Fed Speaker', 'Economic Data', 'Investor Day'].map((tab, index) => (
-              <span className={index === 0 ? 'active' : ''} key={tab}>{tab}</span>
-            ))}
+            <h2>{activeFilter} Earnings</h2>
           </div>
           <div className="event-list">
-            {otherEvents.map(([type, title, time, impact]) => (
-              <div className="event-row" key={`${title}-${time}`}>
+            {filteredEarnings.slice(0, 18).map((event) => (
+              <div className="event-row" key={`${event.symbol}-${event.date}-${event.session}`}>
                 <CalendarDays size={18} />
                 <div>
-                  <strong>{title}</strong>
-                  <span>{type}</span>
+                  <strong><a className="symbol-link" href={yahooChartUrl(event.symbol)} target="_blank" rel="noreferrer">{event.symbol}</a></strong>
+                  <span>{event.company || formatDayLabel(event.date)}</span>
                 </div>
-                <time>{time}</time>
-                <ImpactBadge impact={impact} />
-                <Star size={16} />
+                <time>{event.timeLabel}</time>
+                <ImpactBadge impact={event.impact} />
+                {event.watchlistMatch && <Star size={16} />}
               </div>
             ))}
+            {filteredEarnings.length === 0 && <div className="empty-panel">No verified earnings events for this filter</div>}
           </div>
         </article>
       </div>
       <article className="data-card weekly-calendar">
         <div className="card-title">
-          <h2>Weekly Calendar</h2>
-          <button className="link-button">View Full Calendar</button>
+          <h2>Next 7 Days</h2>
+          <span className="link-button">{earnings.length} verified events</span>
         </div>
         <div className="week-grid">
-          {['Mon, May 12', 'Tue, May 13', 'Wed, May 14', 'Thu, May 15', 'Fri, May 16', 'Mon, May 19', 'Tue, May 20'].map((day, index) => (
-            <div className={`day-column ${index === 4 ? 'active' : ''}`} key={day}>
-              <strong>{day}</strong>
-              <EventPill label="CPI (Apr)" impact="High" />
-              <EventPill label="NVDA Earnings" impact={index % 2 === 0 ? 'High' : 'Medium'} />
-              <EventPill label="Powell Speaks" impact="Medium" />
-              <button className="link-button">+{index + 2} More Events</button>
-            </div>
-          ))}
+          {days.map((day) => {
+            const dayEvents = earnings.filter((event) => event.date === day);
+            return (
+              <div className={`day-column ${day === today ? 'active' : ''}`} key={day}>
+                <strong>{formatDayLabel(day)}</strong>
+                {dayEvents.slice(0, 3).map((event) => <EventPill label={`${event.symbol} Earnings`} impact={event.impact} key={`${event.symbol}-${event.session}`} />)}
+                {dayEvents.length > 3 && <span className="link-button">+{dayEvents.length - 3} More Events</span>}
+                {dayEvents.length === 0 && <span className="muted-text">No earnings</span>}
+              </div>
+            );
+          })}
+          {days.length === 0 && <div className="empty-panel">No verified earnings events available yet</div>}
         </div>
       </article>
+      {watchlistEvents.length > 0 && (
+        <article className="data-card weekly-calendar">
+          <div className="card-title"><h2>Watchlist Earnings Highlights</h2></div>
+          <div className="event-list">
+            {watchlistEvents.map((event) => (
+              <div className="event-row" key={`watch-${event.symbol}-${event.date}-${event.session}`}>
+                <Star size={16} />
+                <div>
+                  <strong><a className="symbol-link" href={yahooChartUrl(event.symbol)} target="_blank" rel="noreferrer">{event.symbol}</a></strong>
+                  <span>{formatDayLabel(event.date)}</span>
+                </div>
+                <time>{event.timeLabel}</time>
+                <span className="number">EPS {formatEventNumber(event.epsEstimate)}</span>
+                <span className="number">Rev {formatEventNumber(event.revenueEstimate, true)}</span>
+              </div>
+            ))}
+          </div>
+        </article>
+      )}
     </div>
   );
 }
@@ -690,8 +755,8 @@ function EarningsDay({
   date,
   title,
 }: {
-  after: string[][];
-  before: string[][];
+  after: EarningsEvent[];
+  before: EarningsEvent[];
   date: string;
   title: string;
 }) {
@@ -709,20 +774,21 @@ function EarningsDay({
   );
 }
 
-function EarningsSession({ rows, title }: { rows: string[][]; title: string }) {
+function EarningsSession({ rows, title }: { rows: EarningsEvent[]; title: string }) {
   return (
     <div className="earnings-session">
       <h3>{title}</h3>
-      {rows.map(([symbol, company, eps, revenue, time, impact]) => (
-        <div className="earnings-row" key={`${symbol}-${time}`}>
-          <strong>{symbol}</strong>
-          <span>{company}</span>
-          <span>{eps}</span>
-          <span>{revenue}</span>
-          <time>{time}</time>
-          <ImpactBadge impact={impact} />
+      {rows.map((event) => (
+        <div className="earnings-row" key={`${event.symbol}-${event.date}-${event.session}`}>
+          <strong><a className="symbol-link" href={yahooChartUrl(event.symbol)} target="_blank" rel="noreferrer">{event.symbol}</a></strong>
+          <span>{event.company || event.symbol}</span>
+          <span>{formatEventNumber(event.epsEstimate)}</span>
+          <span>{formatEventNumber(event.revenueEstimate, true)}</span>
+          <time>{event.timeLabel}</time>
+          <ImpactBadge impact={event.impact} />
         </div>
       ))}
+      {rows.length === 0 && <div className="empty-panel">No verified earnings</div>}
     </div>
   );
 }
