@@ -23,6 +23,23 @@ export default function DailyFinancePage() {
       subtitle="One pre-market plan and one after-hours review for the major indexes, watchlists, and trading levels."
     >
       <div className="reports-grid finance-grid-wide">
+
+        <FinanceCard title="Yahoo-style Daily Report">
+          <div className="report-subgrid">
+            <FinanceSection title="Generated Report Link">
+              <p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p>
+              <div className="link-row">
+                <a className="primary-button" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a>
+                <a className="filter-button" href="https://awolf08.github.io/FinanceDailyReport/reports/" target="_blank" rel="noreferrer">Open Report Archive</a>
+              </div>
+              <p className="muted-text">This is the legacy generated report. Its scheduled job is currently disabled, so Latest points to the last generated report unless we re-enable that workflow.</p>
+            </FinanceSection>
+            <FinanceSection title="How This Fits">
+              <p>Use this link when you want the detailed daily report format. Use the cards below for the newer Baybell briefing template and future automation.</p>
+            </FinanceSection>
+          </div>
+        </FinanceCard>
+
         <FinanceCard title="Pre-market Analysis Template">
           <MetricStrip metrics={[
             { label: 'Publish Time', value: 'Before Open', tone: 'neutral' },
