@@ -49,6 +49,7 @@ test('weekly finance page is generated from market and earnings data', async () 
     assert.match(html, /S&amp;P 500/);
     assert.match(html, /ORCL/);
     assert.match(html, /After Close/);
+    assert.match(html, /Event risk/);
     assert.doesNotMatch(html, /State the weekly bias/);
   } finally {
     await rm(dir, { recursive: true, force: true });

@@ -23,7 +23,7 @@ export function FinanceShell({ active, children, eyebrow, subtitle, title }: Fin
 
         <nav className="primary-nav" aria-label="Main navigation">
           <Link className="nav-item" href="/"><Home size={18} /><span>Overview</span></Link>
-          <Link className="nav-item" href="/#events"><CalendarDays size={18} /><span>Events</span></Link>
+          <Link className="nav-item" href="/?page=events"><CalendarDays size={18} /><span>Events</span></Link>
           <Link className={`nav-item ${active === 'daily' ? 'active' : ''}`} href="/daily-finance/"><FileText size={18} /><span>Daily Finance</span></Link>
           <Link className={`nav-item ${active === 'weekly' ? 'active' : ''}`} href="/weekly-finance/"><CalendarDays size={18} /><span>Weekly Finance</span></Link>
           <Link className="nav-item" href="/guru-position/"><BarChart3 size={18} /><span>Guru Positions</span></Link>

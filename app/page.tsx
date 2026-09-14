@@ -192,8 +192,15 @@ function makeSparklinePoints(quote: Quote) {
   return points.map(([x, y]) => `${x},${Math.max(14, Math.min(70, y))}`).join(' ');
 }
 
+function pageFromLocation(): Page {
+  if (typeof window === 'undefined') return 'overview';
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get('page') || window.location.hash.replace(/^#/, '');
+  return requested === 'events' || requested === 'reports' ? requested : 'overview';
+}
+
 export default function Home() {
-  const [page, setPage] = useState<Page>('overview');
+  const [page, setPage] = useState<Page>(() => pageFromLocation());
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [indexes, setIndexes] = useState<Quote[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
@@ -211,6 +218,16 @@ export default function Home() {
   const [symbolInput, setSymbolInput] = useState('');
   const [categoryInput, setCategoryInput] = useState('');
   const [targetCategory, setTargetCategory] = useState(initialCategories[0].name);
+
+  useEffect(() => {
+    const syncPageFromUrl = () => setPage(pageFromLocation());
+    window.addEventListener('popstate', syncPageFromUrl);
+    window.addEventListener('hashchange', syncPageFromUrl);
+    return () => {
+      window.removeEventListener('popstate', syncPageFromUrl);
+      window.removeEventListener('hashchange', syncPageFromUrl);
+    };
+  }, []);
 
   useEffect(() => {
     let stopped = false;

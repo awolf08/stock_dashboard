@@ -85,6 +85,35 @@ function rows(items, render) {
   return items.map(render).join('\n');
 }
 
+function marketFocusItems({ outlook, groups, indexQuotes, topMovers, weakMovers, earnings }) {
+  const focus = [];
+  const bestGroup = groups[0];
+  const worstGroup = groups.at(-1);
+  const bestIndex = [...indexQuotes].sort((a, b) => b.percent - a.percent)[0];
+  const worstIndex = [...indexQuotes].sort((a, b) => a.percent - b.percent)[0];
+  if (bestIndex || worstIndex) {
+    focus.push(`Index tone: ${bestIndex?.label || bestIndex?.symbol || 'leading index'} is strongest at ${formatPercent(bestIndex?.percent)}, while ${worstIndex?.label || worstIndex?.symbol || 'weakest index'} is weakest at ${formatPercent(worstIndex?.percent)}. Watch whether leadership broadens or stays concentrated.`);
+  } else {
+    focus.push(`Index tone: major index data is limited in this snapshot. Use the INDEX ETF basket as the next best read for SPY, QQQ, DIA, and IWM.`);
+  }
+  if (bestGroup && worstGroup) {
+    focus.push(`Sector rotation: ${bestGroup.name} leads with an average move of ${formatPercent(bestGroup.average)}; ${worstGroup.name} lags at ${formatPercent(worstGroup.average)}. Next week, confirmation matters more than one-day strength.`);
+  }
+  if (topMovers[0] || weakMovers[0]) {
+    focus.push(`Watchlist leadership: strongest names include ${topMovers.slice(0, 3).map((quote) => quote.symbol).join(', ') || 'n/a'}; weakest names include ${weakMovers.slice(0, 3).map((quote) => quote.symbol).join(', ') || 'n/a'}. Favor groups where multiple names confirm the same direction.`);
+  }
+  const watchlistEvents = earnings.filter((event) => event.watchlistMatch);
+  if (watchlistEvents.length) {
+    focus.push(`Event risk: ${watchlistEvents.length} watchlist earnings events are on the calendar. Treat those symbols as gap-risk names and avoid assuming normal technical follow-through around reports.`);
+  } else if (earnings.length) {
+    focus.push(`Event risk: the earnings feed has ${earnings.length} verified events, but none are tagged as current watchlist matches. Broader sentiment can still move with large-cap reports.`);
+  } else {
+    focus.push('Event risk: earnings feed is empty or unavailable, so next-week risk should be checked manually before trading around reports.');
+  }
+  focus.push(`Planning stance: current bias is ${outlook.bias} with ${outlook.confidence} confidence. Use breadth above 60% as confirmation for risk-on continuation and breadth below 45% as a warning to reduce exposure.`);
+  return focus;
+}
+
 export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl = eventsPath, outputUrl = outputPath } = {}) {
   const market = await readJson(marketUrl, { provider: 'finnhub', generatedAt: null, indexes: [], categories: [] });
   const events = await readJson(eventsUrl, { generatedAt: null, earnings: [] });
@@ -104,6 +133,7 @@ export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl 
   const eventsUpdated = events.generatedAt ?? null;
   const indexEtfSymbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'SMH', 'IGV'];
   const majorIndexList = indexQuotes.length ? indexQuotes : allQuotes.filter((quote) => indexEtfSymbols.includes(quote.symbol));
+  const focusItems = marketFocusItems({ outlook, groups, indexQuotes: majorIndexList, topMovers, weakMovers, earnings });
 
   const html = `<!doctype html>
 <html lang="en">
@@ -173,6 +203,7 @@ export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl 
       </section>
       <section class="grid">
         <article class="card"><div class="card-title"><h2>Data-driven Weekly Forecast</h2><span class="stamp">Generated ${escapeHtml(formatDateTime(generatedAt))}</span></div><div class="metrics"><div class="metric"><span>Bias</span><strong>${escapeHtml(outlook.bias)}</strong></div><div class="metric"><span>Confidence</span><strong>${escapeHtml(outlook.confidence)}</strong></div><div class="metric"><span>Index Avg</span><strong class="${outlook.indexAverage >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(outlook.indexAverage))}</strong></div><div class="metric"><span>Watchlist Breadth</span><strong>${Math.round(outlook.breadth * 100)}%</strong></div></div><div class="sections"><section class="box"><h3>Executive View</h3><p>The model reads the latest quote snapshot as <strong>${escapeHtml(outlook.bias)}</strong>. Major index average is <strong class="${outlook.indexAverage >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(outlook.indexAverage))}</strong>, while watchlist breadth is <strong>${Math.round(outlook.breadth * 100)}%</strong>. Strongest group: <strong>${escapeHtml(outlook.strongest)}</strong>. Weakest group: <strong>${escapeHtml(outlook.weakest)}</strong>.</p></section><section class="box"><h3>Scenario Plan</h3><ul><li>Base case: follow the current breadth signal until indexes reverse through the prior snapshot direction.</li><li>Bullish trigger: indexes and leading groups both close positive, with breadth above 60%.</li><li>Bearish trigger: index average falls below -0.5% and leadership narrows under 45% breadth.</li><li>Event risk: ${outlook.highImpactEvents} watchlist/high-impact earnings events are in the calendar window.</li></ul></section></div></article>
+        <article class="card"><div class="card-title"><h2>Next Week Market Focus / 下周市场关注点</h2></div><div class="sections"><section class="box"><h3>Focus and Analysis</h3><ul>${rows(focusItems, (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>How to Use This</h3><p>This section is generated from the latest index, ETF, watchlist, and earnings data. It highlights what to verify first when the new week starts: index confirmation, sector rotation, leadership breadth, and earnings gap risk.</p></section></div></article>
         <article class="card"><div class="card-title"><h2>Major Index / ETF Roadmap</h2><span class="stamp">Market data ${escapeHtml(formatDateTime(marketUpdated))}</span></div><table><thead><tr><th>Symbol</th><th>Price</th><th>Move</th><th>Read</th></tr></thead><tbody>${rows(majorIndexList.slice(0, 10), (quote) => `<tr><td>${escapeHtml(quote.label || quote.symbol)}</td><td>${escapeHtml(formatPrice(quote.price))}</td><td class="${quote.percent >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</td><td>${quote.percent >= 0 ? 'Supportive' : 'Pressure'}</td></tr>`)}</tbody></table></article>
         <div class="two"><article class="card"><div class="card-title"><h2>Strongest Groups</h2></div><table><thead><tr><th>Group</th><th>Avg Move</th><th>Breadth</th></tr></thead><tbody>${rows(groups.slice(0, 6), (group) => `<tr><td>${escapeHtml(group.name)}</td><td class="${group.average >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(group.average))}</td><td>${group.gainers}/${group.count} up</td></tr>`)}</tbody></table></article><article class="card"><div class="card-title"><h2>Weakest Groups</h2></div><table><thead><tr><th>Group</th><th>Avg Move</th><th>Breadth</th></tr></thead><tbody>${rows([...groups].reverse().slice(0, 6), (group) => `<tr><td>${escapeHtml(group.name)}</td><td class="${group.average >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(group.average))}</td><td>${group.gainers}/${group.count} up</td></tr>`)}</tbody></table></article></div>
         <div class="two"><article class="card"><div class="card-title"><h2>Top Watchlist Movers</h2></div><table><thead><tr><th>Symbol</th><th>Group</th><th>Move</th></tr></thead><tbody>${rows(topMovers, (quote) => `<tr><td>${escapeHtml(quote.symbol)}</td><td>${escapeHtml(quote.group)}</td><td class="${quote.percent >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</td></tr>`)}</tbody></table></article><article class="card"><div class="card-title"><h2>Weak Watchlist Movers</h2></div><table><thead><tr><th>Symbol</th><th>Group</th><th>Move</th></tr></thead><tbody>${rows(weakMovers, (quote) => `<tr><td>${escapeHtml(quote.symbol)}</td><td>${escapeHtml(quote.group)}</td><td class="${quote.percent >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</td></tr>`)}</tbody></table></article></div>
