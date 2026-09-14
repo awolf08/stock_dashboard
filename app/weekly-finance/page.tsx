@@ -22,6 +22,21 @@ export default function WeeklyFinancePage() {
       subtitle="A weekly forecast template for index direction, macro drivers, earnings focus, and scenario planning."
     >
       <div className="reports-grid finance-grid-wide">
+        <FinanceCard title="Generated Weekly Report Link">
+          <div className="report-subgrid">
+            <FinanceSection title="Weekly Market Events Report">
+              <p>Open the generated weekly market-events report from the legacy FinanceDailyReport publisher.</p>
+              <div className="link-row">
+                <a className="primary-button" href="https://baybell.com/weekly-finance/2026-09-13.html" target="_blank" rel="noreferrer">Open Latest Weekly Report</a>
+                <a className="filter-button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a>
+              </div>
+            </FinanceSection>
+            <FinanceSection title="How This Fits">
+              <p>Use this link for the full weekly generated report. The cards below remain the Baybell weekly planning template.</p>
+            </FinanceSection>
+          </div>
+        </FinanceCard>
+
         <FinanceCard title="Weekly Forecast Template">
           <MetricStrip metrics={[
             { label: 'Publish Time', value: 'Weekend', tone: 'neutral' },

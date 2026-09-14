@@ -38,6 +38,24 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 
+function latestWeeklyReportUrl(value) {
+  const source = value && Number.isFinite(Date.parse(value)) ? new Date(value) : new Date();
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+  }).formatToParts(source);
+  const get = (type) => parts.find((part) => part.type === type)?.value;
+  const localDate = new Date(`${get('year')}-${get('month')}-${get('day')}T12:00:00Z`);
+  const weekdayIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday'));
+  const daysSinceSunday = weekdayIndex >= 0 ? weekdayIndex : localDate.getUTCDay();
+  localDate.setUTCDate(localDate.getUTCDate() - daysSinceSunday);
+  const date = localDate.toISOString().slice(0, 10);
+  return `https://baybell.com/weekly-finance/${date}.html`;
+}
+
 async function readJson(url, fallback) {
   try {
     return JSON.parse(await readFile(url, 'utf8'));
@@ -129,6 +147,7 @@ export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl 
   const weakMovers = [...allQuotes].filter((quote) => !quote.isIndex).sort((a, b) => a.percent - b.percent).slice(0, 8);
   const outlook = outlookFromData(indexQuotes, allQuotes.filter((quote) => !quote.isIndex), groups, earnings);
   const generatedAt = new Date().toISOString();
+  const weeklyReportUrl = latestWeeklyReportUrl(generatedAt);
   const marketUpdated = market.generatedAt ?? null;
   const eventsUpdated = events.generatedAt ?? null;
   const indexEtfSymbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'SMH', 'IGV'];
@@ -202,6 +221,7 @@ export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl 
         <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="https://baybell.com/private/">Private Login</a></div>
       </section>
       <section class="grid">
+        <article class="card"><div class="card-title"><h2>Generated Weekly Report Link</h2></div><div class="sections"><section class="box"><h3>Weekly Market Events Report</h3><p>Open the generated weekly market-events report from the legacy FinanceDailyReport publisher.</p><div class="actions"><a class="button primary" href="${escapeHtml(weeklyReportUrl)}" target="_blank" rel="noreferrer">Open Latest Weekly Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>How This Fits</h3><p>Use this link for the full weekly generated report. The cards below remain the Baybell data-driven weekly dashboard view.</p></section></div></article>
         <article class="card"><div class="card-title"><h2>Data-driven Weekly Forecast</h2><span class="stamp">Generated ${escapeHtml(formatDateTime(generatedAt))}</span></div><div class="metrics"><div class="metric"><span>Bias</span><strong>${escapeHtml(outlook.bias)}</strong></div><div class="metric"><span>Confidence</span><strong>${escapeHtml(outlook.confidence)}</strong></div><div class="metric"><span>Index Avg</span><strong class="${outlook.indexAverage >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(outlook.indexAverage))}</strong></div><div class="metric"><span>Watchlist Breadth</span><strong>${Math.round(outlook.breadth * 100)}%</strong></div></div><div class="sections"><section class="box"><h3>Executive View</h3><p>The model reads the latest quote snapshot as <strong>${escapeHtml(outlook.bias)}</strong>. Major index average is <strong class="${outlook.indexAverage >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(outlook.indexAverage))}</strong>, while watchlist breadth is <strong>${Math.round(outlook.breadth * 100)}%</strong>. Strongest group: <strong>${escapeHtml(outlook.strongest)}</strong>. Weakest group: <strong>${escapeHtml(outlook.weakest)}</strong>.</p></section><section class="box"><h3>Scenario Plan</h3><ul><li>Base case: follow the current breadth signal until indexes reverse through the prior snapshot direction.</li><li>Bullish trigger: indexes and leading groups both close positive, with breadth above 60%.</li><li>Bearish trigger: index average falls below -0.5% and leadership narrows under 45% breadth.</li><li>Event risk: ${outlook.highImpactEvents} watchlist/high-impact earnings events are in the calendar window.</li></ul></section></div></article>
         <article class="card"><div class="card-title"><h2>Next Week Market Focus / 下周市场关注点</h2></div><div class="sections"><section class="box"><h3>Focus and Analysis</h3><ul>${rows(focusItems, (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>How to Use This</h3><p>This section is generated from the latest index, ETF, watchlist, and earnings data. It highlights what to verify first when the new week starts: index confirmation, sector rotation, leadership breadth, and earnings gap risk.</p></section></div></article>
         <article class="card"><div class="card-title"><h2>Major Index / ETF Roadmap</h2><span class="stamp">Market data ${escapeHtml(formatDateTime(marketUpdated))}</span></div><table><thead><tr><th>Symbol</th><th>Price</th><th>Move</th><th>Read</th></tr></thead><tbody>${rows(majorIndexList.slice(0, 10), (quote) => `<tr><td>${escapeHtml(quote.label || quote.symbol)}</td><td>${escapeHtml(formatPrice(quote.price))}</td><td class="${quote.percent >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</td><td>${quote.percent >= 0 ? 'Supportive' : 'Pressure'}</td></tr>`)}</tbody></table></article>
