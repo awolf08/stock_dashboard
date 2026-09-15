@@ -1,4 +1,59 @@
-<!doctype html>
+import { readFile, writeFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import { generateDailyMarketSummary } from './generate-daily-market-summary.mjs';
+
+const summaryPath = new URL('../public/data/daily-market-summary.json', import.meta.url);
+const outputPath = new URL('../public/daily-finance/index.html', import.meta.url);
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function formatPrice(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 'n/a';
+  return number.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+}
+
+function formatPercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 'n/a';
+  return `${number > 0 ? '+' : ''}${number.toFixed(2)}%`;
+}
+
+function formatDateTime(value) {
+  if (!value || !Number.isFinite(Date.parse(value))) return 'Not available';
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Los_Angeles',
+  }).format(new Date(value));
+}
+
+function rows(items, render) {
+  return items.map(render).join('\n');
+}
+
+function levelText(levels) {
+  if (!levels) return 'n/a';
+  return `Support ${levels.support.join(' / ')} · Resistance ${levels.resistance.join(' / ')}`;
+}
+
+async function readSummary() {
+  try {
+    return JSON.parse(await readFile(summaryPath, 'utf8'));
+  } catch {
+    return generateDailyMarketSummary();
+  }
+}
+
+export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
+  const summary = await readSummary();
+  const indices = Object.entries(summary.indices ?? {}).filter(([, quote]) => quote);
+  const html = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -61,27 +116,13 @@
     </aside>
     <main>
       <section class="hero">
-        <div><span class="eyebrow">Daily Market Summary</span><h1>9月7日美股收盘：谨慎中性，Semiconductors领涨</h1><p>Generated from the latest dashboard quote snapshot. This is the structured first version; an LLM writing layer can be added later for a longer narrative like your example.</p></div>
+        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(summary.title)}</h1><p>Generated from the latest dashboard quote snapshot. This is the structured first version; an LLM writing layer can be added later for a longer narrative like your example.</p></div>
         <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-summary.json">Open JSON</a></div>
       </section>
       <section class="grid">
-        <article class="card"><div class="card-title"><h2>收盘总结</h2><span class="stamp">Generated Sep 15, 2026, 1:53 PM</span></div><div class="metrics"></div><div class="sections"><section class="box"><h3>今日解读</h3><ul><li>今天指数平均表现为 0.00%，watchlist 广度约 33%。</li>
-<li>板块轮动上，Semiconductors 最强，平均 +3.36%；Cloud &amp; Infra 最弱，平均 -1.63%。这说明今天更适合看板块分化，而不是只看大盘指数。</li>
-<li>半导体仍是明天需要重点确认的方向，尤其要看 NVDA、SMH、SOXL 是否继续同步。</li></ul></section><section class="box"><h3>关键驱动</h3><ul><li>Semiconductors 领涨，显示资金短线偏好的方向</li>
-<li>Cloud &amp; Infra 落后，说明风险偏好仍不均衡</li>
-<li>Watchlist breadth 33%，用于判断上涨/下跌是否有广度支持</li></ul></section></div></article>
-        <article class="card"><div class="card-title"><h2>SPX / QQQ / ES 关键位</h2><span class="stamp">Market data Sep 7, 2026, 2:13 PM</span></div><table><thead><tr><th>Asset</th><th>Levels</th></tr></thead><tbody><tr><td>SPX</td><td>n/a</td></tr><tr><td>QQQ</td><td>n/a</td></tr><tr><td>ES proxy</td><td>n/a</td></tr></tbody></table></article>
-        <div class="two"><article class="card"><div class="card-title"><h2>明天看什么</h2></div><div class="sections"><section class="box"><h3>观察清单</h3><ul><li>SPX 数据缺失时，用 SPY/QQQ 的同步性确认方向。</li>
-<li>QQQ/NDX 是判断成长股风险偏好的核心。</li>
-<li>确认半导体是否止跌，比单日指数涨跌更重要。</li></ul></section><section class="box"><h3>情景判断</h3><ul><li><strong>🟢 利好</strong> 指数重新站上第一压力位，同时 QQQ/SMH 强于大盘，说明风险偏好回升。</li>
-<li><strong>🟡 中性</strong> SPX/QQQ 在支撑和压力之间震荡，等待宏观或盈利事件重新定价。</li>
-<li><strong>🔴 风险</strong> SPX 跌破第一支撑且弱势板块继续扩大，优先降低仓位和等待确认。</li></ul></section></div></article><article class="card"><div class="card-title"><h2>板块与个股</h2></div><table><thead><tr><th>Group/Symbol</th><th>Move</th><th>Read</th></tr></thead><tbody><tr><td>Semiconductors</td><td class="up">+3.36%</td><td>5/5 up</td></tr>
-<tr><td>AI Leaders</td><td class="down">-0.31%</td><td>2/5 up</td></tr>
-<tr><td>Cybersecurity</td><td class="down">-0.98%</td><td>2/5 up</td></tr>
-<tr><td>Energy &amp; Utilities</td><td class="down">-1.15%</td><td>0/5 up</td></tr>
-<tr><td>AMD</td><td class="up">+4.69%</td><td>Semiconductors</td></tr>
-<tr><td>SMCI</td><td class="up">+4.54%</td><td>Semiconductors</td></tr>
-<tr><td>INTC</td><td class="up">+4.51%</td><td>Semiconductors</td></tr></tbody></table></article></div>
+        <article class="card"><div class="card-title"><h2>收盘总结</h2><span class="stamp">Generated ${escapeHtml(formatDateTime(summary.generatedAt))}</span></div><div class="metrics">${rows(indices.slice(0, 5), ([symbol, quote]) => `<div class="metric"><span>${escapeHtml(symbol)}</span><strong>${escapeHtml(formatPrice(quote.price))}</strong><em class="${Number(quote.percent) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</em></div>`)}</div><div class="sections"><section class="box"><h3>今日解读</h3><ul>${rows(summary.summary ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>关键驱动</h3><ul>${rows(summary.drivers ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section></div></article>
+        <article class="card"><div class="card-title"><h2>SPX / QQQ / ES 关键位</h2><span class="stamp">Market data ${escapeHtml(formatDateTime(summary.marketDataGeneratedAt))}</span></div><table><thead><tr><th>Asset</th><th>Levels</th></tr></thead><tbody><tr><td>SPX</td><td>${escapeHtml(levelText(summary.levels?.SPX))}</td></tr><tr><td>QQQ</td><td>${escapeHtml(levelText(summary.levels?.QQQ))}</td></tr><tr><td>ES proxy</td><td>${escapeHtml(levelText(summary.levels?.ES))}</td></tr></tbody></table></article>
+        <div class="two"><article class="card"><div class="card-title"><h2>明天看什么</h2></div><div class="sections"><section class="box"><h3>观察清单</h3><ul>${rows(summary.tomorrow ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>情景判断</h3><ul>${rows(summary.scenarios ?? [], (item) => `<li><strong>${escapeHtml(item.label)}</strong> ${escapeHtml(item.text)}</li>`)}</ul></section></div></article><article class="card"><div class="card-title"><h2>板块与个股</h2></div><table><thead><tr><th>Group/Symbol</th><th>Move</th><th>Read</th></tr></thead><tbody>${rows([...(summary.sectors?.groups ?? []).slice(0, 4).map((group) => ({ label: group.name, move: group.average, read: `${group.gainers}/${group.count} up` })), ...(summary.movers?.top ?? []).slice(0, 3).map((quote) => ({ label: quote.symbol, move: quote.percent, read: quote.group }))], (row) => `<tr><td>${escapeHtml(row.label)}</td><td class="${Number(row.move) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(row.move))}</td><td>${escapeHtml(row.read)}</td></tr>`)}</tbody></table></article></div>
         <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The JSON behind this page is ready for an LLM narrative layer. Once connected, the module can generate a longer Chinese close report with citations and macro context.</p></section></div></article>
       </section>
       <p class="footer-note">This page is generated during deploy from dashboard quote data. It is informational market analysis, not investment advice.</p>
@@ -89,3 +130,16 @@
   </div>
 </body>
 </html>
+`;
+  await writeFile(outputUrl, html);
+  return summary;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  generateDailyFinance().then((summary) => {
+    console.log(`Generated daily finance page for ${summary.date}: ${summary.bias}.`);
+  }).catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+}

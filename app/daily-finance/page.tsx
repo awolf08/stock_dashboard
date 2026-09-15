@@ -7,16 +7,6 @@ const preMarketChecklist = [
   'Key levels: prior close, overnight high/low, major support/resistance, and invalidation level.',
 ];
 
-function latestDailyReportUrl() {
-  const date = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Los_Angeles',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
-  return `https://baybell.com/daily-finance/${date}.html`;
-}
-
 const afterHoursChecklist = [
   'Index recap: close location, breadth, volume, volatility, and sector leadership.',
   'Top drivers: earnings, macro headlines, rates, mega-cap moves, and ETF flow signals.',
@@ -25,8 +15,6 @@ const afterHoursChecklist = [
 ];
 
 export default function DailyFinancePage() {
-  const marketCloseSummaryUrl = latestDailyReportUrl();
-
   return (
     <FinanceShell
       active="daily"
@@ -36,33 +24,17 @@ export default function DailyFinancePage() {
     >
       <div className="reports-grid finance-grid-wide">
 
-        <FinanceCard title="Yahoo-style Daily Report">
+        <FinanceCard title="Daily Market Summary / 美股收盘总结">
           <div className="report-subgrid">
-            <FinanceSection title="Generated Report Link">
-              <p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p>
+            <FinanceSection title="How It Is Generated">
+              <p>The dashboard generates a structured daily market summary from the latest quote snapshot: index moves, watchlist breadth, strongest and weakest groups, top movers, support/resistance levels, and next-session scenarios.</p>
               <div className="link-row">
-                <a className="primary-button" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a>
-                <a className="filter-button" href="https://awolf08.github.io/FinanceDailyReport/reports/" target="_blank" rel="noreferrer">Open Report Archive</a>
-              </div>
-              <p className="muted-text">This is the legacy generated report. Its scheduled job is active and publishes the latest daily report when the scheduled run completes.</p>
-            </FinanceSection>
-            <FinanceSection title="How This Fits">
-              <p>Use this link when you want the detailed daily report format. Use the cards below for the newer Baybell briefing template and future automation.</p>
-            </FinanceSection>
-          </div>
-        </FinanceCard>
-
-        <FinanceCard title="US Market Close Summary / 美股收盘总结">
-          <div className="report-subgrid">
-            <FinanceSection title="Scheduled Close Report">
-              <p>Open the daily scheduled US market close summary for the current market date.</p>
-              <div className="link-row">
-                <a className="primary-button" href={marketCloseSummaryUrl} target="_blank" rel="noreferrer">Open Today&apos;s Close Summary</a>
-                <a className="filter-button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a>
+                <a className="primary-button" href="/data/daily-market-summary.json" target="_blank" rel="noreferrer">Open Summary JSON</a>
+                <a className="filter-button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Legacy Archive</a>
               </div>
             </FinanceSection>
-            <FinanceSection title="What It Covers">
-              <p>This report is generated from the daily schedule and includes market close recap, after-hours movers, earnings, macro headlines, and next-session prep.</p>
+            <FinanceSection title="Next Upgrade">
+              <p>This is the data layer for the kind of Chinese close report you showed. The next step is adding an LLM writing pass that turns the JSON into a longer narrative with macro/news context.</p>
             </FinanceSection>
           </div>
         </FinanceCard>

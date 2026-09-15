@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-15T20:53:44.528Z",
+  "marketDataGeneratedAt": "2026-09-07T21:13:43.725Z",
+  "date": "2026-09-07",
+  "title": "9月7日美股收盘：谨慎中性，Semiconductors领涨",
+  "bias": "谨慎中性",
+  "tone": "neutral",
+  "indices": {
+    "SPX": null,
+    "QQQ": null,
+    "DIA": null,
+    "IWM": null,
+    "SMH": null
+  },
+  "market": {
+    "indexAverage": 0,
+    "breadth": 0.3333333333333333
+  },
+  "sectors": {
+    "strongest": {
+      "name": "Semiconductors",
+      "count": 5,
+      "average": 3.36002,
+      "gainers": 5,
+      "losers": 0
+    },
+    "weakest": {
+      "name": "Cloud & Infra",
+      "count": 5,
+      "average": -1.6254000000000002,
+      "gainers": 1,
+      "losers": 4
+    },
+    "groups": [
+      {
+        "name": "Semiconductors",
+        "count": 5,
+        "average": 3.36002,
+        "gainers": 5,
+        "losers": 0
+      },
+      {
+        "name": "AI Leaders",
+        "count": 5,
+        "average": -0.30676000000000003,
+        "gainers": 2,
+        "losers": 3
+      },
+      {
+        "name": "Cybersecurity",
+        "count": 5,
+        "average": -0.98216,
+        "gainers": 2,
+        "losers": 3
+      },
+      {
+        "name": "Energy & Utilities",
+        "count": 5,
+        "average": -1.1547,
+        "gainers": 0,
+        "losers": 5
+      },
+      {
+        "name": "FinTech",
+        "count": 5,
+        "average": -1.40624,
+        "gainers": 0,
+        "losers": 5
+      },
+      {
+        "name": "Cloud & Infra",
+        "count": 5,
+        "average": -1.6254000000000002,
+        "gainers": 1,
+        "losers": 4
+      }
+    ]
+  },
+  "movers": {
+    "top": [
+      {
+        "symbol": "AMD",
+        "price": 477.57,
+        "change": 21.41,
+        "percent": 4.6935,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "Semiconductors",
+        "isIndex": false
+      },
+      {
+        "symbol": "SMCI",
+        "price": 39.59,
+        "change": 1.72,
+        "percent": 4.5419,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "Semiconductors",
+        "isIndex": false
+      },
+      {
+        "symbol": "INTC",
+        "price": 95.8,
+        "change": 4.13,
+        "percent": 4.5053,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "Semiconductors",
+        "isIndex": false
+      },
+      {
+        "symbol": "ORCL",
+        "price": 158.78,
+        "change": 4.74,
+        "percent": 3.0771,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "Cloud & Infra",
+        "isIndex": false
+      },
+      {
+        "symbol": "TSM",
+        "price": 428.91,
+        "change": 11.9,
+        "percent": 2.8536,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "Semiconductors",
+        "isIndex": false
+      }
+    ],
+    "weak": [
+      {
+        "symbol": "SNOW",
+        "price": 337.18,
+        "change": -19.29,
+        "percent": -5.4114,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "Cloud & Infra",
+        "isIndex": false
+      },
+      {
+        "symbol": "ZS",
+        "price": 169.8,
+        "change": -8,
+        "percent": -4.4994,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "Cybersecurity",
+        "isIndex": false
+      },
+      {
+        "symbol": "PYPL",
+        "price": 54.96,
+        "change": -1.86,
+        "percent": -3.2735,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "FinTech",
+        "isIndex": false
+      },
+      {
+        "symbol": "NOW",
+        "price": 141.26,
+        "change": -4.33,
+        "percent": -2.9741,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "Cloud & Infra",
+        "isIndex": false
+      },
+      {
+        "symbol": "MSFT",
+        "price": 499.7,
+        "change": -10.42,
+        "percent": -2.0427,
+        "quotedAt": "2026-09-04T20:00:00.000Z",
+        "group": "AI Leaders",
+        "isIndex": false
+      }
+    ]
+  },
+  "levels": {
+    "SPX": null,
+    "QQQ": null,
+    "ES": null
+  },
+  "drivers": [
+    "Semiconductors 领涨，显示资金短线偏好的方向",
+    "Cloud & Infra 落后，说明风险偏好仍不均衡",
+    "Watchlist breadth 33%，用于判断上涨/下跌是否有广度支持"
+  ],
+  "summary": [
+    "今天指数平均表现为 0.00%，watchlist 广度约 33%。",
+    "板块轮动上，Semiconductors 最强，平均 +3.36%；Cloud & Infra 最弱，平均 -1.63%。这说明今天更适合看板块分化，而不是只看大盘指数。",
+    "半导体仍是明天需要重点确认的方向，尤其要看 NVDA、SMH、SOXL 是否继续同步。"
+  ],
+  "tomorrow": [
+    "SPX 数据缺失时，用 SPY/QQQ 的同步性确认方向。",
+    "QQQ/NDX 是判断成长股风险偏好的核心。",
+    "确认半导体是否止跌，比单日指数涨跌更重要。"
+  ],
+  "scenarios": [
+    {
+      "label": "🟢 利好",
+      "text": "指数重新站上第一压力位，同时 QQQ/SMH 强于大盘，说明风险偏好回升。"
+    },
+    {
+      "label": "🟡 中性",
+      "text": "SPX/QQQ 在支撑和压力之间震荡，等待宏观或盈利事件重新定价。"
+    },
+    {
+      "label": "🔴 风险",
+      "text": "SPX 跌破第一支撑且弱势板块继续扩大，优先降低仓位和等待确认。"
+    }
+  ]
+}
