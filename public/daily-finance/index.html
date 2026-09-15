@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Daily Finance · Baybell Dashboard</title>
+  <script>(function(){try{var t=localStorage.getItem('baybell-theme')||'light';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();</script>
   <style>
     :root { color-scheme: light; --bg:#f5f7fb; --panel:#ffffff; --soft:#f8fafc; --border:#d9e2ef; --text:#172033; --muted:#637083; --blue:#1769d8; --green:#078052; --red:#c9332b; --amber:#b7791f; }
     * { box-sizing: border-box; }
@@ -46,6 +47,21 @@
     .article-section p { color:#334155; font-size:15px; }
     .article-section p + p { margin-top:12px; }
     .footer-note { margin-top:18px; color:#728095; font-size:13px; }
+    html[data-theme="dark"] { color-scheme: dark; --bg:#020916; --panel:#071527; --soft:#0a1524; --border:rgba(132,169,208,.2); --text:#eef5ff; --muted:#9fb0c5; --blue:#2b9aff; --green:#57df91; --red:#ff5b48; --amber:#f7b731; }
+    html[data-theme="dark"] body { background:radial-gradient(circle at 50% 0%, rgba(25,110,190,.16), transparent 34%), linear-gradient(135deg,#010611 0%,#061120 48%,#020916 100%); }
+    html[data-theme="dark"] aside { background:linear-gradient(180deg,rgba(6,20,38,.98),rgba(2,9,22,.98)); border-right-color:rgba(132,169,208,.16); box-shadow:none; }
+    html[data-theme="dark"] .brand { color:#f4f8ff; border-bottom-color:rgba(132,169,208,.12); }
+    html[data-theme="dark"] nav a { color:#c8d4e3; }
+    html[data-theme="dark"] nav a.active, html[data-theme="dark"] nav a:hover { border-color:rgba(64,155,255,.32); background:linear-gradient(90deg,rgba(20,117,220,.55),rgba(18,67,121,.25)); color:white; }
+    html[data-theme="dark"] .hero, html[data-theme="dark"] .card { background:linear-gradient(180deg,rgba(9,25,45,.78),rgba(4,13,27,.78)); box-shadow:0 16px 38px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.03); }
+    html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3, html[data-theme="dark"] .metric strong { color:#eef5ff; }
+    html[data-theme="dark"] .card-title, html[data-theme="dark"] .metrics, html[data-theme="dark"] th { background:rgba(5,16,31,.48); border-color:rgba(132,169,208,.16); }
+    html[data-theme="dark"] .metric, html[data-theme="dark"] .box { background:rgba(5,16,31,.66); border-color:rgba(132,169,208,.14); }
+    html[data-theme="dark"] .button { background:rgba(4,13,27,.62); color:#dce6f3; border-color:rgba(132,169,208,.22); box-shadow:none; }
+    html[data-theme="dark"] .button.primary { border-color:rgba(64,155,255,.58); background:linear-gradient(180deg,rgba(29,143,255,.78),rgba(15,73,140,.78)); color:white; }
+    html[data-theme="dark"] td, html[data-theme="dark"] .article-section p { color:#dce6f3; }
+    html[data-theme="dark"] ul { color:#abb8c9; }
+    .theme-choice.active { border-color:var(--blue); color:white; background:linear-gradient(180deg,#2d82ee,#1769d8); }
     @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics, .two { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -66,7 +82,7 @@
     <main>
       <section class="hero">
         <div><span class="eyebrow">Daily Market Summary</span><h1>9月7日美股收盘：谨慎中性，Semiconductors领涨</h1><p>Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.</p></div>
-        <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
+        <div class="actions"><button class="button theme-choice" data-theme-choice="light" type="button">Light</button><button class="button theme-choice" data-theme-choice="dark" type="button">Dark</button><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
       </section>
       <section class="grid">
         <article class="card"><div class="card-title"><h2>LLM 收盘长文</h2><span class="stamp">Template fallback</span></div><div class="sections article-grid"><section class="box article-section"><h3>9月7日美股收盘：谨慎中性，Semiconductors领涨</h3><p>今天市场的核心结论是：谨慎中性。指数平均涨跌幅为 0.00%，watchlist 广度约 33%。</p>
@@ -85,7 +101,7 @@
 <p>🟡 中性：SPX/QQQ 在支撑和压力之间震荡，等待宏观或盈利事件重新定价。</p>
 <p>🔴 风险：SPX 跌破第一支撑且弱势板块继续扩大，优先降低仓位和等待确认。</p>
 <p>我的操作判断会优先看组合信号：SPX 是否守住支撑、QQQ 是否强于 SPX、SMH 是否继续修复、弱势板块是否停止扩散。只有这些信号同步改善，反弹才更值得信任。</p></section></div></article>
-        <article class="card"><div class="card-title"><h2>结构化收盘数据</h2><span class="stamp">Generated Sep 15, 2026, 2:12 PM</span></div><div class="metrics"></div><div class="sections"><section class="box"><h3>今日解读</h3><ul><li>今天指数平均表现为 0.00%，watchlist 广度约 33%。</li>
+        <article class="card"><div class="card-title"><h2>结构化收盘数据</h2><span class="stamp">Generated Sep 15, 2026, 2:21 PM</span></div><div class="metrics"></div><div class="sections"><section class="box"><h3>今日解读</h3><ul><li>今天指数平均表现为 0.00%，watchlist 广度约 33%。</li>
 <li>板块轮动上，Semiconductors 最强，平均 +3.36%；Cloud &amp; Infra 最弱，平均 -1.63%。这说明今天更适合看板块分化，而不是只看大盘指数。</li>
 <li>半导体仍是明天需要重点确认的方向，尤其要看 NVDA、SMH、SOXL 是否继续同步。</li></ul></section><section class="box"><h3>关键驱动</h3><ul><li>Semiconductors 领涨，显示资金短线偏好的方向</li>
 <li>Cloud &amp; Infra 落后，说明风险偏好仍不均衡</li>
@@ -107,5 +123,6 @@
       <p class="footer-note">This page is generated during deploy from dashboard quote data. It is informational market analysis, not investment advice.</p>
     </main>
   </div>
+  <script>(function(){function apply(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('baybell-theme',t)}catch(e){}document.querySelectorAll('[data-theme-choice]').forEach(function(b){b.classList.toggle('active',b.dataset.themeChoice===t);});}document.querySelectorAll('[data-theme-choice]').forEach(function(b){b.addEventListener('click',function(){apply(b.dataset.themeChoice||'light');});});apply(document.documentElement.dataset.theme||'light');})();</script>
 </body>
 </html>

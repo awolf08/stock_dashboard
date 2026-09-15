@@ -59,6 +59,15 @@ async function readArticle() {
   return await readJsonOrNull(articlePath);
 }
 
+
+function themeHeadScript() {
+  return `<script>(function(){try{var t=localStorage.getItem('baybell-theme')||'light';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();</script>`;
+}
+
+function themeBodyScript() {
+  return `<script>(function(){function apply(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('baybell-theme',t)}catch(e){}document.querySelectorAll('[data-theme-choice]').forEach(function(b){b.classList.toggle('active',b.dataset.themeChoice===t);});}document.querySelectorAll('[data-theme-choice]').forEach(function(b){b.addEventListener('click',function(){apply(b.dataset.themeChoice||'light');});});apply(document.documentElement.dataset.theme||'light');})();</script>`;
+}
+
 function renderArticleSections(article) {
   if (!article?.sections?.length) return '';
   return rows(article.sections, (section) => `<section class="box article-section"><h3>${escapeHtml(section.heading)}</h3>${rows(section.paragraphs ?? [], (paragraph) => `<p>${escapeHtml(paragraph)}</p>`)}</section>`);
@@ -69,11 +78,12 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
   const article = await readArticle();
   const indices = Object.entries(summary.indices ?? {}).filter(([, quote]) => quote);
   const html = `<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Daily Finance · Baybell Dashboard</title>
+  ${themeHeadScript()}
   <style>
     :root { color-scheme: light; --bg:#f5f7fb; --panel:#ffffff; --soft:#f8fafc; --border:#d9e2ef; --text:#172033; --muted:#637083; --blue:#1769d8; --green:#078052; --red:#c9332b; --amber:#b7791f; }
     * { box-sizing: border-box; }
@@ -116,6 +126,21 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
     .article-section p { color:#334155; font-size:15px; }
     .article-section p + p { margin-top:12px; }
     .footer-note { margin-top:18px; color:#728095; font-size:13px; }
+    html[data-theme="dark"] { color-scheme: dark; --bg:#020916; --panel:#071527; --soft:#0a1524; --border:rgba(132,169,208,.2); --text:#eef5ff; --muted:#9fb0c5; --blue:#2b9aff; --green:#57df91; --red:#ff5b48; --amber:#f7b731; }
+    html[data-theme="dark"] body { background:radial-gradient(circle at 50% 0%, rgba(25,110,190,.16), transparent 34%), linear-gradient(135deg,#010611 0%,#061120 48%,#020916 100%); }
+    html[data-theme="dark"] aside { background:linear-gradient(180deg,rgba(6,20,38,.98),rgba(2,9,22,.98)); border-right-color:rgba(132,169,208,.16); box-shadow:none; }
+    html[data-theme="dark"] .brand { color:#f4f8ff; border-bottom-color:rgba(132,169,208,.12); }
+    html[data-theme="dark"] nav a { color:#c8d4e3; }
+    html[data-theme="dark"] nav a.active, html[data-theme="dark"] nav a:hover { border-color:rgba(64,155,255,.32); background:linear-gradient(90deg,rgba(20,117,220,.55),rgba(18,67,121,.25)); color:white; }
+    html[data-theme="dark"] .hero, html[data-theme="dark"] .card { background:linear-gradient(180deg,rgba(9,25,45,.78),rgba(4,13,27,.78)); box-shadow:0 16px 38px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.03); }
+    html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3, html[data-theme="dark"] .metric strong { color:#eef5ff; }
+    html[data-theme="dark"] .card-title, html[data-theme="dark"] .metrics, html[data-theme="dark"] th { background:rgba(5,16,31,.48); border-color:rgba(132,169,208,.16); }
+    html[data-theme="dark"] .metric, html[data-theme="dark"] .box { background:rgba(5,16,31,.66); border-color:rgba(132,169,208,.14); }
+    html[data-theme="dark"] .button { background:rgba(4,13,27,.62); color:#dce6f3; border-color:rgba(132,169,208,.22); box-shadow:none; }
+    html[data-theme="dark"] .button.primary { border-color:rgba(64,155,255,.58); background:linear-gradient(180deg,rgba(29,143,255,.78),rgba(15,73,140,.78)); color:white; }
+    html[data-theme="dark"] td, html[data-theme="dark"] .article-section p { color:#dce6f3; }
+    html[data-theme="dark"] ul { color:#abb8c9; }
+    .theme-choice.active { border-color:var(--blue); color:white; background:linear-gradient(180deg,#2d82ee,#1769d8); }
     @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics, .two { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -136,7 +161,7 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
     <main>
       <section class="hero">
         <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(summary.title)}</h1><p>Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.</p></div>
-        <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
+        <div class="actions"><button class="button theme-choice" data-theme-choice="light" type="button">Light</button><button class="button theme-choice" data-theme-choice="dark" type="button">Dark</button><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
       </section>
       <section class="grid">
         <article class="card"><div class="card-title"><h2>LLM 收盘长文</h2><span class="stamp">${escapeHtml(article?.provider === 'openai' ? `OpenAI · ${article.model ?? 'model'}` : 'Template fallback')}</span></div><div class="sections article-grid">${renderArticleSections(article)}</div></article>
@@ -148,6 +173,7 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
       <p class="footer-note">This page is generated during deploy from dashboard quote data. It is informational market analysis, not investment advice.</p>
     </main>
   </div>
+  ${themeBodyScript()}
 </body>
 </html>
 `;

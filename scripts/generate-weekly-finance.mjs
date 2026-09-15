@@ -20,6 +20,15 @@ function formatPercent(value) {
   return `${number > 0 ? '+' : ''}${number.toFixed(2)}%`;
 }
 
+
+function themeHeadScript() {
+  return `<script>(function(){try{var t=localStorage.getItem('baybell-theme')||'light';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();</script>`;
+}
+
+function themeBodyScript() {
+  return `<script>(function(){function apply(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('baybell-theme',t)}catch(e){}document.querySelectorAll('[data-theme-choice]').forEach(function(b){b.classList.toggle('active',b.dataset.themeChoice===t);});}document.querySelectorAll('[data-theme-choice]').forEach(function(b){b.addEventListener('click',function(){apply(b.dataset.themeChoice||'light');});});apply(document.documentElement.dataset.theme||'light');})();</script>`;
+}
+
 function formatPrice(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return 'n/a';
@@ -155,13 +164,15 @@ export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl 
   const focusItems = marketFocusItems({ outlook, groups, indexQuotes: majorIndexList, topMovers, weakMovers, earnings });
 
   const html = `<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Weekly Finance · Baybell Dashboard</title>
+  ${themeHeadScript()}
   <style>
-    :root { color-scheme: dark; --bg:#020916; --panel:#071527; --border:rgba(132,169,208,.2); --text:#eef5ff; --muted:#9fb0c5; --blue:#2b9aff; --green:#57df91; --red:#ff5b48; --amber:#f7b731; }
+    :root { color-scheme: light; --bg:#f5f7fb; --panel:#ffffff; --border:#d9e2ef; --text:#172033; --muted:#637083; --blue:#1769d8; --green:#078052; --red:#c9332b; --amber:#b7791f; }
+    html[data-theme="dark"] { color-scheme: dark; --bg:#020916; --panel:#071527; --border:rgba(132,169,208,.2); --text:#eef5ff; --muted:#9fb0c5; --blue:#2b9aff; --green:#57df91; --red:#ff5b48; --amber:#f7b731; }
     * { box-sizing: border-box; }
     body { margin:0; min-height:100vh; background:radial-gradient(circle at 50% 0%, rgba(25,110,190,.16), transparent 34%), linear-gradient(135deg,#010611 0%,#061120 48%,#020916 100%); color:var(--text); font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     .shell { display:grid; grid-template-columns:268px minmax(0,1fr); min-height:100vh; }
@@ -198,6 +209,21 @@ export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl 
     td { color:#dce6f3; }
     .up { color:var(--green); } .down { color:var(--red); } .amber { color:var(--amber); }
     .footer-note { margin-top:18px; color:#7f8fa4; font-size:13px; }
+    html:not([data-theme="dark"]) body { background:linear-gradient(135deg,#f8fbff 0%,#eef4fb 52%,#f7f8fb 100%); }
+    html:not([data-theme="dark"]) aside { background:rgba(255,255,255,.92); border-right-color:var(--border); box-shadow:10px 0 30px rgba(30,45,70,.05); }
+    html:not([data-theme="dark"]) .brand { color:#182235; border-bottom-color:var(--border); }
+    html:not([data-theme="dark"]) nav a { color:#4d5b70; font-weight:600; }
+    html:not([data-theme="dark"]) nav a.active, html:not([data-theme="dark"]) nav a:hover { border-color:#b9d3f5; background:#eef6ff; color:#1459b8; }
+    html:not([data-theme="dark"]) .hero { border:1px solid var(--border); background:rgba(255,255,255,.78); border-radius:14px; padding:22px; box-shadow:0 18px 45px rgba(37,52,75,.08); }
+    html:not([data-theme="dark"]) .card { border-color:var(--border); border-radius:14px; background:rgba(255,255,255,.94); box-shadow:0 18px 45px rgba(37,52,75,.08); }
+    html:not([data-theme="dark"]) .card-title { border-bottom-color:var(--border); background:#fbfdff; }
+    html:not([data-theme="dark"]) h1, html:not([data-theme="dark"]) h2, html:not([data-theme="dark"]) h3 { color:#111827; }
+    html:not([data-theme="dark"]) .button { border-color:#cdd8e7; background:white; color:#25354d; box-shadow:0 4px 12px rgba(30,45,70,.05); }
+    html:not([data-theme="dark"]) .button.primary, .theme-choice.active { border-color:#1769d8; background:linear-gradient(180deg,#2d82ee,#1769d8); color:white; }
+    html:not([data-theme="dark"]) .metric, html:not([data-theme="dark"]) .box { border-color:#dfe7f2; background:white; }
+    html:not([data-theme="dark"]) .metrics, html:not([data-theme="dark"]) th { border-bottom-color:var(--border); background:#f8fafc; }
+    html:not([data-theme="dark"]) td { color:#25354d; }
+    html:not([data-theme="dark"]) ul { color:#4d5b70; }
     @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics, .two { grid-template-columns:1fr; } }
   </style>
 </head>
@@ -218,7 +244,7 @@ export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl 
     <main>
       <section class="hero">
         <div><span class="eyebrow">Weekly Finance · Real Data</span><h1>Next Week Market Outlook</h1><p>Generated from the latest market snapshot and Finnhub earnings calendar. Macro calendar is not connected yet, so the outlook focuses on price action, breadth, sector groups, and known earnings risk.</p></div>
-        <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="https://baybell.com/private/">Private Login</a></div>
+        <div class="actions"><button class="button theme-choice" data-theme-choice="light" type="button">Light</button><button class="button theme-choice" data-theme-choice="dark" type="button">Dark</button><a class="button" href="/">Dashboard</a><a class="button primary" href="https://baybell.com/private/">Private Login</a></div>
       </section>
       <section class="grid">
         <article class="card"><div class="card-title"><h2>Generated Weekly Report Link</h2></div><div class="sections"><section class="box"><h3>Weekly Market Events Report</h3><p>Open the generated weekly market-events report from the legacy FinanceDailyReport publisher.</p><div class="actions"><a class="button primary" href="${escapeHtml(weeklyReportUrl)}" target="_blank" rel="noreferrer">Open Latest Weekly Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>How This Fits</h3><p>Use this link for the full weekly generated report. The cards below remain the Baybell data-driven weekly dashboard view.</p></section></div></article>
@@ -232,6 +258,7 @@ export async function generateWeeklyFinance({ marketUrl = marketPath, eventsUrl 
       <p class="footer-note">This page is generated during deploy from verified quote and earnings JSON. It is an informational market briefing template, not investment advice.</p>
     </main>
   </div>
+  ${themeBodyScript()}
 </body>
 </html>
 `;

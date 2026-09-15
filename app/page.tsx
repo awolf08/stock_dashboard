@@ -27,6 +27,7 @@ import { parseMarketPayload, snapshotIsStale, type Quote } from '../lib/market';
 
 type Page = 'overview' | 'events' | 'reports';
 type Accent = 'cyan' | 'amber' | 'blue' | 'violet' | 'pink' | 'gold';
+type ThemeMode = 'light' | 'dark';
 
 type Category = {
   name: string;
@@ -42,6 +43,7 @@ type StoredCategory = {
 
 const initialCategories: Category[] = watchlist.map(({ name, accent }) => ({ name, accent: accent as Accent, quotes: [] }));
 const watchlistStorageKey = 'baybell-watchlists-v1';
+const themeStorageKey = 'baybell-theme';
 
 // This is only a public navigation URL. Authentication belongs to the report host.
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
@@ -192,6 +194,11 @@ function makeSparklinePoints(quote: Quote) {
   return points.map(([x, y]) => `${x},${Math.max(14, Math.min(70, y))}`).join(' ');
 }
 
+function readStoredTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'light';
+  return window.localStorage.getItem(themeStorageKey) === 'dark' ? 'dark' : 'light';
+}
+
 function pageFromLocation(): Page {
   if (typeof window === 'undefined') return 'overview';
   const params = new URLSearchParams(window.location.search);
@@ -201,6 +208,7 @@ function pageFromLocation(): Page {
 
 export default function Home() {
   const [page, setPage] = useState<Page>(() => pageFromLocation());
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => readStoredTheme());
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [indexes, setIndexes] = useState<Quote[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
@@ -218,6 +226,12 @@ export default function Home() {
   const [symbolInput, setSymbolInput] = useState('');
   const [categoryInput, setCategoryInput] = useState('');
   const [targetCategory, setTargetCategory] = useState(initialCategories[0].name);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', themeMode === 'dark');
+    document.documentElement.dataset.theme = themeMode;
+    try { window.localStorage.setItem(themeStorageKey, themeMode); } catch {}
+  }, [themeMode]);
 
   useEffect(() => {
     const syncPageFromUrl = () => setPage(pageFromLocation());
@@ -441,6 +455,10 @@ export default function Home() {
         </div>
 
         <div className="sidebar-footer">
+          <div className="theme-toggle" aria-label="Theme mode">
+            <button className={themeMode === 'light' ? 'active' : ''} onClick={() => setThemeMode('light')} type="button">Light</button>
+            <button className={themeMode === 'dark' ? 'active' : ''} onClick={() => setThemeMode('dark')} type="button">Dark</button>
+          </div>
           <div className="market-mini">
             <span className="status-dot" />
             <div>

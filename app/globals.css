@@ -45,10 +45,43 @@
   --radius-xl: 0.65rem;
 }
 
-:root,
-.dark {
+:root {
   --font-ui-sans: 'Geist', 'IBM Plex Sans', 'Inter', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-ui-mono: 'Geist Mono', 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, 'Cascadia Code', monospace;
+  --background: #f5f7fb;
+  --foreground: #172033;
+  --card: #ffffff;
+  --card-foreground: #172033;
+  --popover: #ffffff;
+  --popover-foreground: #172033;
+  --primary: #1769d8;
+  --primary-foreground: #ffffff;
+  --secondary: #eef4fb;
+  --secondary-foreground: #25354d;
+  --muted: #f1f5f9;
+  --muted-foreground: #637083;
+  --accent: #e8f2ff;
+  --accent-foreground: #1459b8;
+  --destructive: #c9332b;
+  --border: #d9e2ef;
+  --input: #cdd8e7;
+  --ring: rgba(23, 105, 216, 0.38);
+  --chart-1: #28e0c2;
+  --chart-2: #f7b731;
+  --chart-3: #5aa9ff;
+  --chart-4: #a77dff;
+  --chart-5: #ff7a1a;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: #1769d8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef6ff;
+  --sidebar-accent-foreground: #1459b8;
+  --sidebar-border: #d9e2ef;
+  --sidebar-ring: rgba(23, 105, 216, 0.38);
+}
+
+.dark {
   --background: #020916;
   --foreground: #e8eef7;
   --card: #071323;
@@ -1185,3 +1218,73 @@ button {
   gap: 10px;
   margin-top: 14px;
 }
+
+
+html:not(.dark) {
+  background: #f5f7fb;
+}
+
+html:not(.dark) body {
+  background: linear-gradient(135deg, #f8fbff 0%, #eef4fb 52%, #f7f8fb 100%);
+}
+
+html:not(.dark) .sidebar {
+  background: rgba(255,255,255,.94);
+  border-right-color: #d9e2ef;
+  box-shadow: 10px 0 30px rgba(30,45,70,.05);
+}
+
+html:not(.dark) .brand,
+html:not(.dark) .page-heading h1,
+html:not(.dark) .card-title h2 { color: #172033; }
+
+html:not(.dark) .brand,
+html:not(.dark) .card-title,
+html:not(.dark) .quote-header,
+html:not(.dark) .quote-row,
+html:not(.dark) .data-card,
+html:not(.dark) .modal-title { border-color: #d9e2ef; }
+
+html:not(.dark) .nav-item { color: #4d5b70; }
+html:not(.dark) .nav-item:hover,
+html:not(.dark) .nav-item.active { background: #eef6ff; border-color: #b9d3f5; color: #1459b8; }
+
+html:not(.dark) .workspace,
+html:not(.dark) .search-box,
+html:not(.dark) .theme-toggle,
+html:not(.dark) .data-card,
+html:not(.dark) .index-card,
+html:not(.dark) .modal,
+html:not(.dark) .metric-tile,
+html:not(.dark) .day-column,
+html:not(.dark) .event-row,
+html:not(.dark) .report-box,
+html:not(.dark) .input-shell,
+html:not(.dark) input,
+html:not(.dark) select { background: #ffffff; color: #25354d; border-color: #d9e2ef; box-shadow: 0 12px 32px rgba(37,52,75,.08); }
+
+html:not(.dark) .index-card span,
+html:not(.dark) .quote-header,
+html:not(.dark) .section-label,
+html:not(.dark) .muted-text,
+html:not(.dark) .dialog-note,
+html:not(.dark) .updated-mini span,
+html:not(.dark) .market-mini span,
+html:not(.dark) .search-box { color: #637083; }
+
+html:not(.dark) .index-card strong,
+html:not(.dark) .quote-row,
+html:not(.dark) .number,
+html:not(.dark) .symbol-link,
+html:not(.dark) .watchlist-row,
+html:not(.dark) .event-row strong,
+html:not(.dark) .report-box strong { color: #172033; }
+
+html:not(.dark) .filter-button,
+html:not(.dark) .outline-button,
+html:not(.dark) .ghost-button,
+html:not(.dark) .link-button { background: #ffffff; color: #25354d; border-color: #cdd8e7; }
+
+html:not(.dark) .filter-button.active,
+html:not(.dark) .theme-toggle .active,
+html:not(.dark) .primary-button { background: linear-gradient(180deg, #2d82ee, #1769d8); color: #ffffff; }
