@@ -27,14 +27,15 @@ export default function DailyFinancePage() {
         <FinanceCard title="Daily Market Summary / 美股收盘总结">
           <div className="report-subgrid">
             <FinanceSection title="How It Is Generated">
-              <p>The dashboard generates a structured daily market summary from the latest quote snapshot: index moves, watchlist breadth, strongest and weakest groups, top movers, support/resistance levels, and next-session scenarios.</p>
+              <p>The dashboard generates a structured daily market summary from the latest quote snapshot, then writes a Chinese close-report article from that JSON. If OPENAI_API_KEY is configured, the article uses the LLM writer; otherwise it uses the deterministic template fallback.</p>
               <div className="link-row">
-                <a className="primary-button" href="/data/daily-market-summary.json" target="_blank" rel="noreferrer">Open Summary JSON</a>
+                <a className="primary-button" href="/data/daily-market-article.json" target="_blank" rel="noreferrer">Open Article JSON</a>
+                <a className="filter-button" href="/data/daily-market-summary.json" target="_blank" rel="noreferrer">Open Data JSON</a>
                 <a className="filter-button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Legacy Archive</a>
               </div>
             </FinanceSection>
             <FinanceSection title="Next Upgrade">
-              <p>This is the data layer for the kind of Chinese close report you showed. The next step is adding an LLM writing pass that turns the JSON into a longer narrative with macro/news context.</p>
+              <p>This is now the second-layer article pipeline for the kind of Chinese close report you showed. The next upgrade is adding macro/news inputs such as rates, oil, VIX, Fed expectations, and source links.</p>
             </FinanceSection>
           </div>
         </FinanceCard>

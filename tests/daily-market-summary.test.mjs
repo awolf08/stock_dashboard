@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 import { generateDailyMarketSummary } from '../scripts/generate-daily-market-summary.mjs';
 import { generateDailyFinance } from '../scripts/generate-daily-finance.mjs';
+import { generateDailyMarketArticle } from '../scripts/generate-daily-market-article.mjs';
 
 test('generateDailyMarketSummary creates structured close summary from market data', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'daily-summary-'));
@@ -55,6 +56,55 @@ test('generateDailyFinance renders the daily summary card', async () => {
   await generateDailyFinance({ outputUrl: pathToFileURL(outputPath) });
   const html = await readFile(outputPath, 'utf8');
   assert.match(html, /Daily Market Summary/);
-  assert.match(html, /收盘总结/);
+  assert.match(html, /结构化收盘数据/);
   assert.match(html, /daily-market-summary\.json/);
+  assert.match(html, /daily-market-article\.json/);
+  assert.match(html, /LLM 收盘长文/);
+});
+
+
+test('generateDailyMarketArticle writes Chinese article JSON with template fallback', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'daily-article-'));
+  const summaryPath = join(dir, 'daily-market-summary.json');
+  const outputPath = join(dir, 'daily-market-article.json');
+  await writeFile(summaryPath, JSON.stringify({
+    schemaVersion: 1,
+    generatedAt: '2026-09-15T21:05:00.000Z',
+    marketDataGeneratedAt: '2026-09-15T21:00:00.000Z',
+    date: '2026-09-15',
+    title: '9月15日美股收盘：偏弱，半导体止跌',
+    bias: '偏弱，风险控制优先',
+    indices: {
+      SPX: { price: 7614, change: -6, percent: -0.08 },
+      QQQ: { price: 708, change: -2, percent: -0.28 },
+      IWM: { price: 239, change: -1.8, percent: -0.75 },
+      SMH: { price: 340, change: 4, percent: 1.2 },
+    },
+    market: { indexAverage: -0.5, breadth: 0.38 },
+    sectors: {
+      strongest: { name: 'Semiconductors', average: 1.3, gainers: 4, count: 5 },
+      weakest: { name: 'Cloud & Infra', average: -1.5, gainers: 1, count: 5 },
+    },
+    movers: {
+      top: [{ symbol: 'NVDA', percent: 0.96, group: 'Semiconductors' }],
+      weak: [{ symbol: 'SNOW', percent: -2.3, group: 'Cloud & Infra' }],
+    },
+    levels: {
+      SPX: { support: [7600, 7570, 7550], resistance: [7630, 7650, 7700] },
+      QQQ: { support: [705, 700], resistance: [715, 720] },
+      ES: { support: [7600, 7580], resistance: [7630, 7650] },
+    },
+    tomorrow: ['看 SPX 是否守住 7600。'],
+    scenarios: [{ label: '🟡 中性', text: '继续震荡。' }],
+  }));
+
+  const article = await generateDailyMarketArticle({
+    summaryUrl: pathToFileURL(summaryPath),
+    outputUrl: pathToFileURL(outputPath),
+  });
+
+  assert.equal(article.provider, 'template');
+  assert.match(article.markdown, /为什么今天市场这样走/);
+  assert.match(article.markdown, /SPX/);
+  assert.equal(JSON.parse(await readFile(outputPath, 'utf8')).schemaVersion, 1);
 });

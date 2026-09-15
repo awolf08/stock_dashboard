@@ -17,7 +17,8 @@
     "format": "oxfmt",
     "fetch:events": "node scripts/fetch-events-data.mjs",
     "generate:daily-summary": "node scripts/generate-daily-market-summary.mjs",
-    "generate:daily-finance": "node scripts/generate-daily-finance.mjs"
+    "generate:daily-finance": "node scripts/generate-daily-finance.mjs",
+    "generate:daily-article": "node scripts/generate-daily-market-article.mjs"
   },
   "dependencies": {
     "react": "19.2.6",

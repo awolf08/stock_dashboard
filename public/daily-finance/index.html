@@ -41,6 +41,8 @@
     th { color:#8fa1b8; font-weight:500; }
     td { color:#dce6f3; }
     .up { color:var(--green); } .down { color:var(--red); } .amber { color:var(--amber); }
+    .article-grid { grid-template-columns:1fr; }
+    .article-section p + p { margin-top:12px; }
     .footer-note { margin-top:18px; color:#7f8fa4; font-size:13px; }
     @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics, .two { grid-template-columns:1fr; } }
   </style>
@@ -61,11 +63,27 @@
     </aside>
     <main>
       <section class="hero">
-        <div><span class="eyebrow">Daily Market Summary</span><h1>9月7日美股收盘：谨慎中性，Semiconductors领涨</h1><p>Generated from the latest dashboard quote snapshot. This is the structured first version; an LLM writing layer can be added later for a longer narrative like your example.</p></div>
-        <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-summary.json">Open JSON</a></div>
+        <div><span class="eyebrow">Daily Market Summary</span><h1>9月7日美股收盘：谨慎中性，Semiconductors领涨</h1><p>Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.</p></div>
+        <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
       </section>
       <section class="grid">
-        <article class="card"><div class="card-title"><h2>收盘总结</h2><span class="stamp">Generated Sep 15, 2026, 1:53 PM</span></div><div class="metrics"></div><div class="sections"><section class="box"><h3>今日解读</h3><ul><li>今天指数平均表现为 0.00%，watchlist 广度约 33%。</li>
+        <article class="card"><div class="card-title"><h2>LLM 收盘长文</h2><span class="stamp">Template fallback</span></div><div class="sections article-grid"><section class="box article-section"><h3>9月7日美股收盘：谨慎中性，Semiconductors领涨</h3><p>今天市场的核心结论是：谨慎中性。指数平均涨跌幅为 0.00%，watchlist 广度约 33%。</p>
+<p>盘面比指数本身更重要。Semiconductors 是今天最强方向，平均 +3.36%；Cloud &amp; Infra 明显落后，平均 -1.63%。这说明资金没有全面 risk-on，而是在少数方向里做选择。</p>
+<p>半导体仍是接下来最需要确认的方向，尤其要看 NVDA、SMH、SOXL 是否和 QQQ 同步。</p></section>
+<section class="box article-section"><h3>为什么今天市场这样走？</h3><p>第一，指数层面并不是最极端的单边行情，真正的信号来自广度。watchlist 里只有约 33% 的股票上涨，说明多数个股没有跟上。</p>
+<p>第二，强弱分化很清楚。强势名单包括 AMD +4.69%、SMCI +4.54%、INTC +4.51%、ORCL +3.08%；弱势名单包括 SNOW -5.41%、ZS -4.50%、PYPL -3.27%、NOW -2.97%。如果强势集中在少数股票，而弱势扩散到更多板块，明天需要继续控制仓位。</p>
+<p>第三，今天的主线不是简单的“指数涨跌”，而是观察资金是否愿意重新买回成长和半导体。如果 QQQ、SMH、NVDA 不能同步改善，指数即使反弹也可能只是技术修复。</p></section>
+<section class="box article-section"><h3>SPX / QQQ / ES 关键位</h3><p>SPX：n/a。这里第一支撑和第一压力最重要，决定明天是继续修复还是重新转弱。</p>
+<p>QQQ：n/a。如果 QQQ 能站上第一压力位，同时 SMH 强于指数，成长股会有更好的反弹条件。</p>
+<p>ES proxy：n/a。如果跌破第一支撑，短线更适合等待下一档支撑确认，而不是提前抄底。</p></section>
+<section class="box article-section"><h3>明天怎么判断？</h3><p>SPX 数据缺失时，用 SPY/QQQ 的同步性确认方向。</p>
+<p>QQQ/NDX 是判断成长股风险偏好的核心。</p>
+<p>确认半导体是否止跌，比单日指数涨跌更重要。</p>
+<p>🟢 利好：指数重新站上第一压力位，同时 QQQ/SMH 强于大盘，说明风险偏好回升。</p>
+<p>🟡 中性：SPX/QQQ 在支撑和压力之间震荡，等待宏观或盈利事件重新定价。</p>
+<p>🔴 风险：SPX 跌破第一支撑且弱势板块继续扩大，优先降低仓位和等待确认。</p>
+<p>我的操作判断会优先看组合信号：SPX 是否守住支撑、QQQ 是否强于 SPX、SMH 是否继续修复、弱势板块是否停止扩散。只有这些信号同步改善，反弹才更值得信任。</p></section></div></article>
+        <article class="card"><div class="card-title"><h2>结构化收盘数据</h2><span class="stamp">Generated Sep 15, 2026, 2:02 PM</span></div><div class="metrics"></div><div class="sections"><section class="box"><h3>今日解读</h3><ul><li>今天指数平均表现为 0.00%，watchlist 广度约 33%。</li>
 <li>板块轮动上，Semiconductors 最强，平均 +3.36%；Cloud &amp; Infra 最弱，平均 -1.63%。这说明今天更适合看板块分化，而不是只看大盘指数。</li>
 <li>半导体仍是明天需要重点确认的方向，尤其要看 NVDA、SMH、SOXL 是否继续同步。</li></ul></section><section class="box"><h3>关键驱动</h3><ul><li>Semiconductors 领涨，显示资金短线偏好的方向</li>
 <li>Cloud &amp; Infra 落后，说明风险偏好仍不均衡</li>
@@ -82,7 +100,7 @@
 <tr><td>AMD</td><td class="up">+4.69%</td><td>Semiconductors</td></tr>
 <tr><td>SMCI</td><td class="up">+4.54%</td><td>Semiconductors</td></tr>
 <tr><td>INTC</td><td class="up">+4.51%</td><td>Semiconductors</td></tr></tbody></table></article></div>
-        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The JSON behind this page is ready for an LLM narrative layer. Once connected, the module can generate a longer Chinese close report with citations and macro context.</p></section></div></article>
+        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The article above is generated from the structured dashboard summary. Add OPENAI_API_KEY as a repository secret to use the LLM writer; without it, the template writer keeps the page updated.</p></section></div></article>
       </section>
       <p class="footer-note">This page is generated during deploy from dashboard quote data. It is informational market analysis, not investment advice.</p>
     </main>

@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { generateDailyMarketArticle } from './generate-daily-market-article.mjs';
 import { generateDailyMarketSummary } from './generate-daily-market-summary.mjs';
 import { generateDailyFinance } from './generate-daily-finance.mjs';
 import { generateWeeklyFinance } from './generate-weekly-finance.mjs';
@@ -16,6 +17,7 @@ if (basePath && !/^\/[A-Za-z0-9._-]+$/.test(basePath)) {
   throw new Error('NEXT_PUBLIC_BASE_PATH must be empty or a single /repository-name path.');
 }
 await generateDailyMarketSummary();
+await generateDailyMarketArticle();
 await generateDailyFinance();
 await generateWeeklyFinance();
 const buildEnv = { ...process.env, STATIC_EXPORT: '1', NEXT_PUBLIC_BASE_PATH: basePath };

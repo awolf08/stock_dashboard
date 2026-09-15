@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { generateDailyMarketSummary } from './generate-daily-market-summary.mjs';
 
 const summaryPath = new URL('../public/data/daily-market-summary.json', import.meta.url);
+const articlePath = new URL('../public/data/daily-market-article.json', import.meta.url);
 const outputPath = new URL('../public/daily-finance/index.html', import.meta.url);
 
 function escapeHtml(value) {
@@ -42,16 +43,30 @@ function levelText(levels) {
   return `Support ${levels.support.join(' / ')} · Resistance ${levels.resistance.join(' / ')}`;
 }
 
-async function readSummary() {
+async function readJsonOrNull(url) {
   try {
-    return JSON.parse(await readFile(summaryPath, 'utf8'));
+    return JSON.parse(await readFile(url, 'utf8'));
   } catch {
-    return generateDailyMarketSummary();
+    return null;
   }
+}
+
+async function readSummary() {
+  return await readJsonOrNull(summaryPath) ?? generateDailyMarketSummary();
+}
+
+async function readArticle() {
+  return await readJsonOrNull(articlePath);
+}
+
+function renderArticleSections(article) {
+  if (!article?.sections?.length) return '';
+  return rows(article.sections, (section) => `<section class="box article-section"><h3>${escapeHtml(section.heading)}</h3>${rows(section.paragraphs ?? [], (paragraph) => `<p>${escapeHtml(paragraph)}</p>`)}</section>`);
 }
 
 export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
   const summary = await readSummary();
+  const article = await readArticle();
   const indices = Object.entries(summary.indices ?? {}).filter(([, quote]) => quote);
   const html = `<!doctype html>
 <html lang="en">
@@ -96,6 +111,8 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
     th { color:#8fa1b8; font-weight:500; }
     td { color:#dce6f3; }
     .up { color:var(--green); } .down { color:var(--red); } .amber { color:var(--amber); }
+    .article-grid { grid-template-columns:1fr; }
+    .article-section p + p { margin-top:12px; }
     .footer-note { margin-top:18px; color:#7f8fa4; font-size:13px; }
     @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics, .two { grid-template-columns:1fr; } }
   </style>
@@ -116,14 +133,15 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
     </aside>
     <main>
       <section class="hero">
-        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(summary.title)}</h1><p>Generated from the latest dashboard quote snapshot. This is the structured first version; an LLM writing layer can be added later for a longer narrative like your example.</p></div>
-        <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-summary.json">Open JSON</a></div>
+        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(summary.title)}</h1><p>Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.</p></div>
+        <div class="actions"><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
       </section>
       <section class="grid">
-        <article class="card"><div class="card-title"><h2>收盘总结</h2><span class="stamp">Generated ${escapeHtml(formatDateTime(summary.generatedAt))}</span></div><div class="metrics">${rows(indices.slice(0, 5), ([symbol, quote]) => `<div class="metric"><span>${escapeHtml(symbol)}</span><strong>${escapeHtml(formatPrice(quote.price))}</strong><em class="${Number(quote.percent) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</em></div>`)}</div><div class="sections"><section class="box"><h3>今日解读</h3><ul>${rows(summary.summary ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>关键驱动</h3><ul>${rows(summary.drivers ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section></div></article>
+        <article class="card"><div class="card-title"><h2>LLM 收盘长文</h2><span class="stamp">${escapeHtml(article?.provider === 'openai' ? `OpenAI · ${article.model ?? 'model'}` : 'Template fallback')}</span></div><div class="sections article-grid">${renderArticleSections(article)}</div></article>
+        <article class="card"><div class="card-title"><h2>结构化收盘数据</h2><span class="stamp">Generated ${escapeHtml(formatDateTime(summary.generatedAt))}</span></div><div class="metrics">${rows(indices.slice(0, 5), ([symbol, quote]) => `<div class="metric"><span>${escapeHtml(symbol)}</span><strong>${escapeHtml(formatPrice(quote.price))}</strong><em class="${Number(quote.percent) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</em></div>`)}</div><div class="sections"><section class="box"><h3>今日解读</h3><ul>${rows(summary.summary ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>关键驱动</h3><ul>${rows(summary.drivers ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section></div></article>
         <article class="card"><div class="card-title"><h2>SPX / QQQ / ES 关键位</h2><span class="stamp">Market data ${escapeHtml(formatDateTime(summary.marketDataGeneratedAt))}</span></div><table><thead><tr><th>Asset</th><th>Levels</th></tr></thead><tbody><tr><td>SPX</td><td>${escapeHtml(levelText(summary.levels?.SPX))}</td></tr><tr><td>QQQ</td><td>${escapeHtml(levelText(summary.levels?.QQQ))}</td></tr><tr><td>ES proxy</td><td>${escapeHtml(levelText(summary.levels?.ES))}</td></tr></tbody></table></article>
         <div class="two"><article class="card"><div class="card-title"><h2>明天看什么</h2></div><div class="sections"><section class="box"><h3>观察清单</h3><ul>${rows(summary.tomorrow ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>情景判断</h3><ul>${rows(summary.scenarios ?? [], (item) => `<li><strong>${escapeHtml(item.label)}</strong> ${escapeHtml(item.text)}</li>`)}</ul></section></div></article><article class="card"><div class="card-title"><h2>板块与个股</h2></div><table><thead><tr><th>Group/Symbol</th><th>Move</th><th>Read</th></tr></thead><tbody>${rows([...(summary.sectors?.groups ?? []).slice(0, 4).map((group) => ({ label: group.name, move: group.average, read: `${group.gainers}/${group.count} up` })), ...(summary.movers?.top ?? []).slice(0, 3).map((quote) => ({ label: quote.symbol, move: quote.percent, read: quote.group }))], (row) => `<tr><td>${escapeHtml(row.label)}</td><td class="${Number(row.move) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(row.move))}</td><td>${escapeHtml(row.read)}</td></tr>`)}</tbody></table></article></div>
-        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The JSON behind this page is ready for an LLM narrative layer. Once connected, the module can generate a longer Chinese close report with citations and macro context.</p></section></div></article>
+        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The article above is generated from the structured dashboard summary. Add OPENAI_API_KEY as a repository secret to use the LLM writer; without it, the template writer keeps the page updated.</p></section></div></article>
       </section>
       <p class="footer-note">This page is generated during deploy from dashboard quote data. It is informational market analysis, not investment advice.</p>
     </main>
