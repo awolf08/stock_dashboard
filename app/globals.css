@@ -1288,3 +1288,23 @@ html:not(.dark) .link-button { background: #ffffff; color: #25354d; border-color
 html:not(.dark) .filter-button.active,
 html:not(.dark) .theme-toggle .active,
 html:not(.dark) .primary-button { background: linear-gradient(180deg, #2d82ee, #1769d8); color: #ffffff; }
+
+
+html:not(.dark) .quote-panel .card-title {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 1px 0 #d9e2ef;
+}
+
+html:not(.dark) .quote-panel .quote-header {
+  background: #f8fafc;
+  box-shadow: 0 1px 0 #d9e2ef;
+}
+
+html:not(.dark) .quote-panel .card-title h2 {
+  color: #172033;
+}
+
+html:not(.dark) .quote-panel .card-title svg,
+html:not(.dark) .quote-row button {
+  color: #8ea0b8;
+}
