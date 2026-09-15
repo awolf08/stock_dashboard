@@ -24,7 +24,7 @@ export default function DailyFinancePage() {
     >
       <div className="reports-grid finance-grid-wide">
 
-        <FinanceCard title="Daily Market Summary / 美股收盘总结">
+        <FinanceCard title="Daily Market Summary / 美股收盘总结 · Light">
           <div className="report-subgrid">
             <FinanceSection title="How It Is Generated">
               <p>The dashboard generates a structured daily market summary from the latest quote snapshot, then writes a Chinese close-report article from that JSON. If OPENAI_API_KEY is configured, the article uses the LLM writer; otherwise it uses the deterministic template fallback.</p>
