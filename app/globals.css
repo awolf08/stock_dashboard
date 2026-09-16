@@ -1308,3 +1308,79 @@ html:not(.dark) .quote-panel .card-title svg,
 html:not(.dark) .quote-row button {
   color: #8ea0b8;
 }
+
+html:not(.dark) .earnings-day + .earnings-day,
+html:not(.dark) .earnings-session + .earnings-session,
+html:not(.dark) .day-title,
+html:not(.dark) .earnings-row,
+html:not(.dark) .event-row,
+html:not(.dark) .day-column {
+  border-color: #d9e2ef;
+}
+
+html:not(.dark) .day-title,
+html:not(.dark) .earnings-session,
+html:not(.dark) .weekly-calendar,
+html:not(.dark) .event-list {
+  background: #ffffff;
+}
+
+html:not(.dark) .day-title strong,
+html:not(.dark) .earnings-row strong,
+html:not(.dark) .event-row strong,
+html:not(.dark) .day-column strong,
+html:not(.dark) .event-pill span:first-child {
+  color: #172033;
+}
+
+html:not(.dark) .day-title span,
+html:not(.dark) .earnings-session h3,
+html:not(.dark) .earnings-row,
+html:not(.dark) .earnings-row time,
+html:not(.dark) .event-row span,
+html:not(.dark) .event-row time,
+html:not(.dark) .empty-panel {
+  color: #637083;
+}
+
+html:not(.dark) .event-pill {
+  background: #f8fafc;
+  border-left-color: #1769d8;
+  box-shadow: inset 0 0 0 1px #d9e2ef;
+}
+
+html:not(.dark) .day-column.active {
+  background: #eef6ff;
+  box-shadow: inset 0 0 0 1px #9bc7ff;
+}
+
+html:not(.dark) .data-notice {
+  background: #eef6ff;
+  border-color: #b9d3f5;
+  color: #25354d;
+}
+
+html:not(.dark) .data-notice-warning {
+  background: #fff7e6;
+  border-color: #f0c36a;
+  color: #7a4f00;
+}
+
+html:not(.dark) .impact-badge {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #c2410c;
+}
+
+html:not(.dark) .impact-badge.medium {
+  background: #fffbeb;
+  border-color: #facc15;
+  color: #a16207;
+}
+
+html:not(.dark) .impact-badge.low,
+html:not(.dark) .impact-badge.moderately-bullish {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: #047857;
+}
