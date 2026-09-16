@@ -6,15 +6,43 @@
       "QQQ",
       "SPY",
       "DIA",
-      "IWM",
+      "IWM"
+    ]
+  },
+  {
+    "name": "Technology / Semis ETF",
+    "accent": "amber",
+    "symbols": [
       "SMH",
+      "SOXX",
       "IGV",
-      "UDOW",
-      "UPRO",
+      "XLK"
+    ]
+  },
+  {
+    "name": "Sector ETF",
+    "accent": "blue",
+    "symbols": [
+      "XLF",
+      "XLV",
+      "XLE",
+      "XLI",
+      "XLY",
+      "XLP",
+      "XLU",
+      "XLRE"
+    ]
+  },
+  {
+    "name": "Leveraged ETF",
+    "accent": "gold",
+    "symbols": [
       "SSO",
       "QLD",
       "TQQQ",
-      "SOXL"
+      "SOXL",
+      "UDOW",
+      "UPRO"
     ]
   },
   {
@@ -97,6 +125,16 @@
       "SGOV",
       "BIL",
       "TLT"
+    ]
+  },
+  {
+    "name": "Commodity / Macro ETF",
+    "accent": "violet",
+    "symbols": [
+      "GLD",
+      "SLV",
+      "USO",
+      "UNG"
     ]
   },
   {

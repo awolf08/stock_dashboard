@@ -16,8 +16,6 @@ import {
   Settings,
   Sparkles,
   Star,
-  Trash2,
-  Upload,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -49,6 +47,7 @@ const themeStorageKey = 'baybell-theme';
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
 const baybellHome = process.env.NEXT_PUBLIC_BAYBELL_HOME === '1';
 const featuredIndexSymbols = ['^GSPC', '^IXIC', '^DJI', '^RUT'];
+const marketCategoryNames = new Set(['index etf', 'sector etf', 'technology / semis etf', 'leveraged etf', 'fund/bond', 'commodity / macro etf']);
 
 const historyRows = [
   ['Daily After-hours Report', 'May 16, 2025', '07:45 PM ET', 'Mixed close as tech strength offsets energy weakness'],
@@ -229,6 +228,7 @@ export default function Home() {
   const feedQuotes = useRef<Quote[]>([]);
   const loaded = useRef(false);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [overviewView, setOverviewView] = useState<'market' | 'stocks'>('market');
   const [showSymbolDialog, setShowSymbolDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [symbolInput, setSymbolInput] = useState('');
@@ -384,16 +384,6 @@ export default function Home() {
     setShowSymbolDialog(false);
   }
 
-  function removeSymbol(categoryName: string, symbol: string) {
-    updateCategories((current) =>
-      current.map((category) =>
-        category.name === categoryName
-          ? { ...category, quotes: category.quotes.filter((quote) => quote.symbol !== symbol) }
-          : category,
-      ),
-    );
-  }
-
   function addCategory() {
     const name = categoryInput.trim();
     if (!name || categories.some((category) => category.name.toLowerCase() === name.toLowerCase())) return;
@@ -490,8 +480,8 @@ export default function Home() {
             breadth={breadth}
             categories={categories}
             indexQuotes={indexQuotes}
-            onAddSymbol={() => { setSymbolError(''); setShowSymbolDialog(true); }}
-            onRemoveSymbol={removeSymbol}
+            activeView={overviewView}
+            onSetActiveView={setOverviewView}
             onSetFilter={setActiveFilter}
           />
         )}
@@ -575,22 +565,27 @@ function NavItem({
 
 function Overview({
   activeFilter,
+  activeView,
   breadth,
   categories,
   indexQuotes,
-  onAddSymbol,
-  onRemoveSymbol,
+  onSetActiveView,
   onSetFilter,
 }: {
   activeFilter: string;
+  activeView: 'market' | 'stocks';
   breadth: { gainers: number; losers: number };
   categories: Category[];
   indexQuotes: Quote[];
-  onAddSymbol: () => void;
-  onRemoveSymbol: (category: string, symbol: string) => void;
+  onSetActiveView: (view: 'market' | 'stocks') => void;
   onSetFilter: (filter: string) => void;
 }) {
-  const filters = ['All', 'Gainers', 'Losers', 'Watchlist Only'];
+  const filters = ['All', 'Gainers', 'Losers'];
+  const visibleCategories = categories.filter((category) =>
+    activeView === 'market'
+      ? marketCategoryNames.has(category.name.toLowerCase())
+      : !marketCategoryNames.has(category.name.toLowerCase()),
+  );
   return (
     <div className="page-content">
       {indexQuotes.length > 0 && (
@@ -615,22 +610,20 @@ function Overview({
         </div>
       )}
       <div className="page-heading">
-        <h1>Overview</h1>
+        <div>
+          <h1>Overview</h1>
+          <p>{activeView === 'market' ? 'Index ETF and sector ETF groups' : 'All stock watchlist cards'}</p>
+        </div>
         <div className="action-row">
+          <div className="view-switch" role="tablist" aria-label="Overview view">
+            <button className={activeView === 'market' ? 'active' : ''} onClick={() => onSetActiveView('market')} role="tab" aria-selected={activeView === 'market'}>Index & Sector ETF</button>
+            <button className={activeView === 'stocks' ? 'active' : ''} onClick={() => onSetActiveView('stocks')} role="tab" aria-selected={activeView === 'stocks'}>Stocks Cards</button>
+          </div>
           {filters.map((filter) => (
             <button className={`filter-button ${activeFilter === filter ? 'active' : ''}`} key={filter} onClick={() => onSetFilter(filter)}>
-              {filter === 'Watchlist Only' && <Star size={15} />}
               {filter}
             </button>
           ))}
-          <button className="outline-button" onClick={onAddSymbol}>
-            <Plus size={16} />
-            Add Symbol
-          </button>
-          <button className="outline-button">
-            <Upload size={16} />
-            Import Symbols
-          </button>
           <div className="breadth-chip">
             <span>Market Breadth</span>
             <strong className="up">{breadth.gainers}</strong>
@@ -639,8 +632,8 @@ function Overview({
         </div>
       </div>
       <div className="quote-grid">
-        {categories.map((category) => (
-          <QuotePanel category={{ ...category, quotes: category.quotes.filter((quote) => activeFilter === 'Gainers' ? quote.change > 0 : activeFilter === 'Losers' ? quote.change < 0 : true) }} key={category.name} onRemove={onRemoveSymbol} />
+        {visibleCategories.map((category) => (
+          <QuotePanel category={{ ...category, quotes: category.quotes.filter((quote) => activeFilter === 'Gainers' ? quote.change > 0 : activeFilter === 'Losers' ? quote.change < 0 : true) }} key={category.name} />
         ))}
       </div>
     </div>
@@ -649,10 +642,8 @@ function Overview({
 
 function QuotePanel({
   category,
-  onRemove,
 }: {
   category: Category;
-  onRemove: (category: string, symbol: string) => void;
 }) {
   return (
     <article className={`data-card quote-panel ${accentClass[category.accent]}`}>
@@ -668,7 +659,6 @@ function QuotePanel({
         <span>Price</span>
         <span>Change</span>
         <span>%</span>
-        <span />
       </div>
       {category.quotes.map((quote) => (
         <div className="quote-row" key={quote.symbol}>
@@ -676,9 +666,6 @@ function QuotePanel({
           <span className="number">{formatPrice(quote.price)}</span>
           <span className={`number ${quote.change >= 0 ? 'up' : 'down'}`}>{formatSigned(quote.change)}</span>
           <span className={`number ${quote.percent >= 0 ? 'up' : 'down'}`}>{formatSigned(quote.percent)}%</span>
-          <button aria-label={`Remove ${quote.symbol}`} onClick={() => onRemove(category.name, quote.symbol)}>
-            <Trash2 size={14} />
-          </button>
         </div>
       ))}
       {category.quotes.length === 0 && <div className="empty-panel">No symbols yet</div>}
