@@ -1384,3 +1384,12 @@ html:not(.dark) .impact-badge.moderately-bullish {
   border-color: #86efac;
   color: #047857;
 }
+
+html:not(.dark) .up {
+  color: #047857 !important;
+}
+
+html:not(.dark) .index-card:not(.negative) em,
+html:not(.dark) .index-card:not(.negative) .sparkline {
+  color: #047857;
+}
