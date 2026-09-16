@@ -179,19 +179,27 @@ function categoriesFromStoredWatchlists(stored: StoredCategory[], defaults: Cate
   ];
 }
 
-function makeSparklinePoints(quote: Quote) {
+function makeSparklineShape(quote: Quote) {
   const slope = Math.max(-24, Math.min(24, quote.percent * 3.2));
   const start = 46 - slope / 2;
   const end = 46 + slope / 2;
   const bend = quote.change >= 0 ? -8 : 8;
   const points = [
     [4, start],
-    [22, start + bend * 0.35],
-    [40, (start + end) / 2 + bend],
-    [58, end - bend * 0.2],
+    [18, start + bend * 0.25],
+    [30, start + bend * 0.5],
+    [42, (start + end) / 2 + bend],
+    [56, end - bend * 0.25],
+    [68, end + bend * 0.12],
     [76, end],
-  ];
-  return points.map(([x, y]) => `${x},${Math.max(14, Math.min(70, y))}`).join(' ');
+  ].map(([x, y]) => [x, Math.max(14, Math.min(70, y))]);
+  const line = points.map(([x, y]) => `${x},${y}`).join(' ');
+  return {
+    area: `${line} 76,72 4,72`,
+    endX: points.at(-1)?.[0] ?? 76,
+    endY: points.at(-1)?.[1] ?? 46,
+    line,
+  };
 }
 
 function readStoredTheme(): ThemeMode {
@@ -587,19 +595,23 @@ function Overview({
     <div className="page-content">
       {indexQuotes.length > 0 && (
         <div className="index-deck" aria-label="Major index quotes">
-          {indexQuotes.map((quote) => (
-            <a className={`index-card ${quote.change < 0 ? 'negative' : ''}`} key={quote.symbol} href={yahooChartUrl(quote.symbol)} target="_blank" rel="noreferrer" aria-label={`Open ${quote.label ?? quote.symbol} 1 year candle chart on Yahoo Finance`}>
-              <div>
-                <span>{quote.label ?? quote.symbol}</span>
-                <strong>{formatPrice(quote.price)}</strong>
-                <em>{formatSigned(quote.change)} · {formatSigned(quote.percent)}%</em>
-              </div>
-              <svg className="sparkline" viewBox="0 0 80 80" aria-label={`${quote.symbol} ${quote.percent >= 0 ? 'up' : 'down'} ${formatSigned(quote.percent)} percent`}>
-                <line x1="0" x2="80" y1="46" y2="46" />
-                <polyline points={makeSparklinePoints(quote)} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </a>
-          ))}
+          {indexQuotes.map((quote) => {
+            const sparkline = makeSparklineShape(quote);
+            return (
+              <a className={`index-card ${quote.change < 0 ? 'negative' : ''}`} key={quote.symbol} href={yahooChartUrl(quote.symbol)} target="_blank" rel="noreferrer" aria-label={`Open ${quote.label ?? quote.symbol} 1 year candle chart on Yahoo Finance`}>
+                <div>
+                  <span>{quote.label ?? quote.symbol}</span>
+                  <strong>{formatPrice(quote.price)}</strong>
+                  <em>{formatSigned(quote.change)} · {formatSigned(quote.percent)}%</em>
+                </div>
+                <svg className="sparkline" viewBox="0 0 80 80" aria-label={`${quote.symbol} ${quote.percent >= 0 ? 'up' : 'down'} ${formatSigned(quote.percent)} percent`}>
+                  <polygon className="sparkline-area" points={sparkline.area} />
+                  <polyline className="sparkline-line" points={sparkline.line} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle className="sparkline-dot" cx={sparkline.endX} cy={sparkline.endY} r="1.8" />
+                </svg>
+              </a>
+            );
+          })}
         </div>
       )}
       <div className="page-heading">

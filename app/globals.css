@@ -1393,3 +1393,61 @@ html:not(.dark) .index-card:not(.negative) em,
 html:not(.dark) .index-card:not(.negative) .sparkline {
   color: #047857;
 }
+
+
+.up {
+  color: #00873c !important;
+}
+
+.down {
+  color: #ff333a !important;
+}
+
+.index-card:not(.negative) {
+  border-top-color: #00873c;
+}
+
+.index-card.negative {
+  border-top-color: #ff333a;
+}
+
+.index-card:not(.negative) em,
+.index-card:not(.negative) .sparkline {
+  color: #00873c;
+}
+
+.index-card.negative em,
+.index-card.negative .sparkline {
+  color: #ff333a;
+}
+
+.sparkline-area {
+  fill: currentColor;
+  opacity: 0.14;
+}
+
+.sparkline-line {
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.32));
+}
+
+.sparkline-dot {
+  fill: currentColor;
+}
+
+html:not(.dark) .up {
+  color: #00873c !important;
+}
+
+html:not(.dark) .down {
+  color: #ff333a !important;
+}
+
+html:not(.dark) .index-card:not(.negative) em,
+html:not(.dark) .index-card:not(.negative) .sparkline {
+  color: #00873c;
+}
+
+html:not(.dark) .index-card.negative em,
+html:not(.dark) .index-card.negative .sparkline {
+  color: #ff333a;
+}
