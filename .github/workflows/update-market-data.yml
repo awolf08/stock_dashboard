@@ -5,8 +5,8 @@ on:
   push:
     branches: [main]
   schedule:
-    # Check twice per hour because GitHub may delay or skip individual scheduled starts.
-    - cron: '17,47 * * * *'
+    # Run several staggered checks because GitHub may delay or skip individual scheduled starts.
+    - cron: '11,26,41,56 * * * *'
 
 permissions:
   contents: read
