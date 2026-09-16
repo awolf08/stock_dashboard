@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-  schedule:
-    # Run several staggered checks because GitHub may delay or skip individual scheduled starts.
-    - cron: '11,26,41,56 * * * *'
 
 permissions:
   contents: read
