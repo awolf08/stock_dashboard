@@ -1489,3 +1489,55 @@ html:not(.dark) .breadth-chip {
   border-color: #cdd8e7;
   color: #637083;
 }
+
+.refresh-quotes-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.spin-icon {
+  animation: baybell-spin 1s linear infinite;
+}
+
+@keyframes baybell-spin {
+  to { transform: rotate(360deg); }
+}
+
+.refresh-status {
+  margin-top: -8px;
+  border: 1px solid rgba(132, 169, 208, 0.22);
+  border-radius: 8px;
+  background: rgba(4, 13, 27, 0.62);
+  color: #b5c5d8;
+  padding: 11px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.refresh-status-success {
+  border-color: rgba(0, 135, 60, 0.38);
+  color: #66dda2;
+}
+
+.refresh-status-error {
+  border-color: rgba(255, 51, 58, 0.42);
+  color: #ff9ca0;
+}
+
+html:not(.dark) .refresh-status {
+  background: #f5f9ff;
+  border-color: #cdd8e7;
+  color: #4f5f75;
+}
+
+html:not(.dark) .refresh-status-success {
+  background: #eefbf4;
+  border-color: #99d9b7;
+  color: #047857;
+}
+
+html:not(.dark) .refresh-status-error {
+  background: #fff2f2;
+  border-color: #ffb5b8;
+  color: #c0272d;
+}

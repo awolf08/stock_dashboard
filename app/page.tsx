@@ -12,13 +12,14 @@ import {
   LockKeyhole,
   Menu,
   MoreVertical,
+  RefreshCw,
   Plus,
   Settings,
   Sparkles,
   Star,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import watchlist from '../config/watchlist.json';
 import { parseEventsPayload, type EarningsEvent } from '../lib/events';
 import { parseMarketPayload, snapshotIsStale, type Quote } from '../lib/market';
@@ -26,6 +27,7 @@ import { parseMarketPayload, snapshotIsStale, type Quote } from '../lib/market';
 type Page = 'overview' | 'events' | 'reports';
 type Accent = 'cyan' | 'amber' | 'blue' | 'violet' | 'pink' | 'gold';
 type ThemeMode = 'light' | 'dark';
+type RefreshState = 'idle' | 'requesting' | 'updating' | 'success' | 'error';
 
 type Category = {
   name: string;
@@ -47,6 +49,9 @@ const themeStorageKey = 'baybell-theme';
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
 const baybellHome = process.env.NEXT_PUBLIC_BAYBELL_HOME === '1';
 const featuredIndexSymbols = ['^GSPC', '^IXIC', '^DJI', '^RUT'];
+const refreshQuotesUrl = process.env.NEXT_PUBLIC_REFRESH_QUOTES_URL || '';
+const refreshPollIntervalMs = 20_000;
+const refreshPollTimeoutMs = 5 * 60_000;
 const marketCategoryNames = new Set(['index etf', 'sector etf', 'technology / semis etf', 'leveraged etf', 'fund/bond', 'commodity / macro etf']);
 
 const historyRows = [
@@ -234,12 +239,48 @@ export default function Home() {
   const [symbolInput, setSymbolInput] = useState('');
   const [categoryInput, setCategoryInput] = useState('');
   const [targetCategory, setTargetCategory] = useState(initialCategories[0].name);
+  const [refreshState, setRefreshState] = useState<RefreshState>('idle');
+  const [refreshMessage, setRefreshMessage] = useState('');
+  const generatedAtRef = useRef<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', themeMode === 'dark');
     document.documentElement.dataset.theme = themeMode;
     try { window.localStorage.setItem(themeStorageKey, themeMode); } catch {}
   }, [themeMode]);
+
+
+  const loadMarketSnapshot = useCallback(async ({ signal }: { signal?: AbortSignal } = {}) => {
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    const response = await fetch(`${basePath}/data/market.json?check=${Date.now()}`, {
+      cache: 'no-store', signal,
+    });
+    if (!response.ok) throw new Error('Snapshot unavailable');
+    const payload = parseMarketPayload(await response.json());
+    setIndexes(payload.indexes);
+    feedQuotes.current = [...payload.indexes, ...payload.categories.flatMap((category) => category.quotes)];
+    const quotesBySymbol = new Map(feedQuotes.current.map((quote) => [quote.symbol, quote]));
+    if (!loaded.current) {
+      const stored = readStoredWatchlists();
+      const defaults = categoriesFromPayload(payload.categories);
+      const nextCategories = stored
+        ? categoriesFromStoredWatchlists(stored, defaults, quotesBySymbol)
+        : defaults;
+      setCategories(nextCategories);
+      setTargetCategory(nextCategories[0]?.name ?? '');
+      loaded.current = true;
+    } else {
+      setCategories((current) => current.map((category) => ({
+        ...category,
+        quotes: category.quotes.map((quote) => quotesBySymbol.get(quote.symbol) ?? quote),
+      })));
+    }
+    generatedAtRef.current = payload.generatedAt;
+    setGeneratedAt(payload.generatedAt);
+    setLoadError(false);
+    setNow(Date.now());
+    return payload;
+  }, []);
 
   useEffect(() => {
     const syncPageFromUrl = () => setPage(pageFromLocation());
@@ -259,47 +300,17 @@ export default function Home() {
       request = new AbortController();
       const timeout = setTimeout(() => request?.abort(), 15000);
       try {
-        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-        const response = await fetch(`${basePath}/data/market.json?check=${Date.now()}`, {
-          cache: 'no-store', signal: request.signal,
-        });
-        if (!response.ok) throw new Error('Snapshot unavailable');
-        const payload = parseMarketPayload(await response.json());
-        if (stopped) return;
-        setIndexes(payload.indexes);
-        feedQuotes.current = [...payload.indexes, ...payload.categories.flatMap((category) => category.quotes)];
-        const quotesBySymbol = new Map(feedQuotes.current.map((quote) => [quote.symbol, quote]));
-        if (!loaded.current) {
-          const stored = readStoredWatchlists();
-          const defaults = categoriesFromPayload(payload.categories);
-          const nextCategories = stored
-            ? categoriesFromStoredWatchlists(stored, defaults, quotesBySymbol)
-            : defaults;
-          setCategories(nextCategories);
-          setTargetCategory(nextCategories[0]?.name ?? '');
-          loaded.current = true;
-        } else {
-          // Refresh prices without undoing this tab's watchlist edits.
-          setCategories((current) => current.map((category) => ({
-            ...category,
-            quotes: category.quotes.map((quote) => quotesBySymbol.get(quote.symbol) ?? quote),
-          })));
-        }
-        setGeneratedAt(payload.generatedAt);
-        setLoadError(false);
+        await loadMarketSnapshot({ signal: request.signal });
       } catch {
         if (!stopped) setLoadError(true);
       } finally {
         clearTimeout(timeout);
-        if (!stopped) {
-          setNow(Date.now());
-          timer = setTimeout(refresh, 60000);
-        }
+        if (!stopped) timer = setTimeout(refresh, 60000);
       }
     }
     void refresh();
     return () => { stopped = true; clearTimeout(timer); request?.abort(); };
-  }, []);
+  }, [loadMarketSnapshot]);
 
 
   useEffect(() => {
@@ -349,6 +360,41 @@ export default function Home() {
       return quote ? [quote] : [];
     });
   }, [indexes]);
+
+
+  async function triggerQuoteRefresh() {
+    if (refreshState === 'requesting' || refreshState === 'updating') return;
+    if (!refreshQuotesUrl) {
+      setRefreshState('error');
+      setRefreshMessage('Refresh endpoint is not connected yet.');
+      return;
+    }
+    const startedFrom = generatedAtRef.current;
+    setRefreshState('requesting');
+    setRefreshMessage('Requesting GitHub update…');
+    try {
+      const response = await fetch(refreshQuotesUrl, { method: 'POST' });
+      const result = await response.json().catch(() => ({})) as { message?: string; runUrl?: string };
+      if (!response.ok) throw new Error(result.message || 'Could not start quote refresh.');
+      setRefreshState('updating');
+      setRefreshMessage(result.message || 'GitHub is updating quotes. This usually takes 2–5 minutes.');
+      const deadline = Date.now() + refreshPollTimeoutMs;
+      while (Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, refreshPollIntervalMs));
+        const payload = await loadMarketSnapshot();
+        if (payload.generatedAt && payload.generatedAt !== startedFrom) {
+          setRefreshState('success');
+          setRefreshMessage('Quotes updated.');
+          return;
+        }
+      }
+      setRefreshState('error');
+      setRefreshMessage('Refresh was requested, but the new snapshot is not visible yet. Try again in a minute.');
+    } catch (error) {
+      setRefreshState('error');
+      setRefreshMessage(error instanceof Error ? error.message : 'Could not refresh quotes.');
+    }
+  }
 
   function updateCategories(updater: (current: Category[]) => Category[]) {
     setCategories((current) => {
@@ -481,8 +527,11 @@ export default function Home() {
             categories={categories}
             indexQuotes={indexQuotes}
             activeView={overviewView}
+            onRefreshQuotes={triggerQuoteRefresh}
             onSetActiveView={setOverviewView}
             onSetFilter={setActiveFilter}
+            refreshMessage={refreshMessage}
+            refreshState={refreshState}
           />
         )}
         {page === 'events' && <Events earnings={earningsEvents} generatedAt={eventsGeneratedAt} hasError={eventsError} />}
@@ -569,16 +618,22 @@ function Overview({
   breadth,
   categories,
   indexQuotes,
+  onRefreshQuotes,
   onSetActiveView,
   onSetFilter,
+  refreshMessage,
+  refreshState,
 }: {
   activeFilter: string;
   activeView: 'market' | 'stocks';
   breadth: { gainers: number; losers: number };
   categories: Category[];
   indexQuotes: Quote[];
+  onRefreshQuotes: () => void;
   onSetActiveView: (view: 'market' | 'stocks') => void;
   onSetFilter: (filter: string) => void;
+  refreshMessage: string;
+  refreshState: RefreshState;
 }) {
   const filters = ['All', 'Gainers', 'Losers'];
   const visibleCategories = categories.filter((category) =>
@@ -624,6 +679,10 @@ function Overview({
               {filter}
             </button>
           ))}
+          <button className="outline-button refresh-quotes-button" disabled={refreshState === 'requesting' || refreshState === 'updating'} onClick={onRefreshQuotes} type="button">
+            <RefreshCw className={refreshState === 'requesting' || refreshState === 'updating' ? 'spin-icon' : ''} size={16} />
+            {refreshState === 'requesting' || refreshState === 'updating' ? 'Refreshing' : 'Refresh Quotes'}
+          </button>
           <div className="breadth-chip">
             <span>Market Breadth</span>
             <strong className="up">{breadth.gainers}</strong>
@@ -631,6 +690,7 @@ function Overview({
           </div>
         </div>
       </div>
+      {refreshMessage && <output className={`refresh-status refresh-status-${refreshState}`}>{refreshMessage}</output>}
       <div className="quote-grid">
         {visibleCategories.map((category) => (
           <QuotePanel category={{ ...category, quotes: category.quotes.filter((quote) => activeFilter === 'Gainers' ? quote.change > 0 : activeFilter === 'Losers' ? quote.change < 0 : true) }} key={category.name} />

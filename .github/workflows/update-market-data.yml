@@ -47,6 +47,7 @@ jobs:
         run: pnpm build:pages
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          NEXT_PUBLIC_REFRESH_QUOTES_URL: ${{ vars.REFRESH_QUOTES_URL }}
           NEXT_PUBLIC_PRIVATE_REPORTS_URL: ${{ vars.PRIVATE_REPORTS_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_DAILY_SUMMARY_MODEL: ${{ vars.OPENAI_DAILY_SUMMARY_MODEL || 'gpt-4.1-mini' }}

@@ -1,0 +1,11 @@
+name = "baybell-refresh-quotes"
+main = "worker.js"
+compatibility_date = "2026-09-16"
+
+[vars]
+GITHUB_OWNER = "awolf08"
+GITHUB_REPO = "reports"
+GITHUB_WORKFLOW = "deploy-homepage.yml"
+GITHUB_REF = "main"
+MIN_SECONDS_BETWEEN_RUNS = "600"
+ALLOWED_ORIGINS = "https://baybell.com,https://www.baybell.com,http://localhost:3000,http://localhost:5173"
