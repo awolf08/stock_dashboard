@@ -9,3 +9,11 @@ GITHUB_WORKFLOW = "deploy-homepage.yml"
 GITHUB_REF = "main"
 MIN_SECONDS_BETWEEN_RUNS = "600"
 ALLOWED_ORIGINS = "https://baybell.com,https://www.baybell.com,http://localhost:3000,http://localhost:5173"
+
+[[routes]]
+pattern = "baybell.com/api/refresh-quotes*"
+zone_name = "baybell.com"
+
+[[routes]]
+pattern = "www.baybell.com/api/refresh-quotes*"
+zone_name = "baybell.com"
