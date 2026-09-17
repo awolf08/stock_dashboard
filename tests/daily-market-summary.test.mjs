@@ -63,7 +63,7 @@ test('generateDailyFinance renders the daily summary card', async () => {
   assert.match(html, /daily-market-summary\.json/);
   assert.match(html, /daily-market-article\.json/);
   assert.match(html, /每日盘后总结/);
-  assert.match(html, /FinanceDailyReport · ChatGPT\/latest\.md/);
+  assert.match(html, /reports · ChatGPT\/latest\.md/);
   assert.match(html, /2026-09-16 美股收盘总结/);
 });
 
