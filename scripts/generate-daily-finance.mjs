@@ -4,6 +4,7 @@ import { generateDailyMarketSummary } from './generate-daily-market-summary.mjs'
 
 const summaryPath = new URL('../public/data/daily-market-summary.json', import.meta.url);
 const articlePath = new URL('../public/data/daily-market-article.json', import.meta.url);
+const chatGptLatestUrl = process.env.DAILY_FINANCE_CHATGPT_MARKDOWN_URL || 'https://raw.githubusercontent.com/awolf08/FinanceDailyReport/main/ChatGPT/latest.md';
 const outputPath = new URL('../public/daily-finance/index.html', import.meta.url);
 
 function escapeHtml(value) {
@@ -43,6 +44,64 @@ function levelText(levels) {
   return `Support ${levels.support.join(' / ')} · Resistance ${levels.resistance.join(' / ')}`;
 }
 
+
+async function readTextFromUrl(url) {
+  try {
+    const response = await fetch(url, {
+      headers: { 'user-agent': 'baybell-daily-finance-generator' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const text = await response.text();
+    return text.trim() ? text : null;
+  } catch {
+    return null;
+  }
+}
+
+function inlineMarkdown(value) {
+  return escapeHtml(value)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+}
+
+function renderMarkdown(markdown) {
+  if (!markdown) return '';
+  const lines = markdown.replaceAll('\r\n', '\n').split('\n');
+  const html = [];
+  const paragraph = [];
+  const list = [];
+  function flushParagraph() {
+    if (!paragraph.length) return;
+    html.push(`<p>${inlineMarkdown(paragraph.join(' '))}</p>`);
+    paragraph.length = 0;
+  }
+  function flushList() {
+    if (!list.length) return;
+    html.push(`<ul>${list.map((item) => `<li>${inlineMarkdown(item)}</li>`).join('')}</ul>`);
+    list.length = 0;
+  }
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { flushParagraph(); flushList(); continue; }
+    if (line.startsWith('### ')) { flushParagraph(); flushList(); html.push(`<h3>${inlineMarkdown(line.slice(4))}</h3>`); continue; }
+    if (line.startsWith('## ')) { flushParagraph(); flushList(); html.push(`<h2>${inlineMarkdown(line.slice(3))}</h2>`); continue; }
+    if (line.startsWith('# ')) { flushParagraph(); flushList(); html.push(`<h1>${inlineMarkdown(line.slice(2))}</h1>`); continue; }
+    if (/^[-*]\s+/.test(line)) { flushParagraph(); list.push(line.replace(/^[-*]\s+/, '')); continue; }
+    paragraph.push(line.replace(/\\$/, ''));
+  }
+  flushParagraph();
+  flushList();
+  return html.join('\n');
+}
+
+async function readChatGptLatestMarkdown() {
+  const markdown = await readTextFromUrl(chatGptLatestUrl);
+  if (!markdown) return null;
+  const title = markdown.split('\n').find((line) => line.startsWith('# '))?.replace(/^#\s+/, '').trim() || 'Daily Market Close Summary';
+  return { title, markdown, html: renderMarkdown(markdown), sourceUrl: chatGptLatestUrl };
+}
+
 async function readJsonOrNull(url) {
   try {
     return JSON.parse(await readFile(url, 'utf8'));
@@ -76,6 +135,7 @@ function renderArticleSections(article) {
 export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
   const summary = await readSummary();
   const article = await readArticle();
+  const chatGptArticle = await readChatGptLatestMarkdown();
   const indices = Object.entries(summary.indices ?? {}).filter(([, quote]) => quote);
   const html = `<!doctype html>
 <html lang="en" data-theme="light">
@@ -125,6 +185,13 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
     .article-grid { grid-template-columns:1fr; }
     .article-section p { color:#334155; font-size:15px; }
     .article-section p + p { margin-top:12px; }
+    .markdown-article { padding:18px; }
+    .markdown-article h1 { margin:0 0 18px; font-size:24px; }
+    .markdown-article h2 { margin:24px 0 12px; font-size:20px; }
+    .markdown-article h3 { margin:18px 0 10px; font-size:16px; }
+    .markdown-article p { color:#334155; font-size:15px; line-height:1.75; margin:0 0 13px; }
+    .markdown-article ul { margin:0 0 14px; }
+    .markdown-article a { color:var(--blue); font-weight:700; }
     .footer-note { margin-top:18px; color:#728095; font-size:13px; }
     html[data-theme="dark"] { color-scheme: dark; --bg:#020916; --panel:#071527; --soft:#0a1524; --border:rgba(132,169,208,.2); --text:#eef5ff; --muted:#9fb0c5; --blue:#2b9aff; --green:#57df91; --red:#ff5b48; --amber:#f7b731; }
     html[data-theme="dark"] body { background:radial-gradient(circle at 50% 0%, rgba(25,110,190,.16), transparent 34%), linear-gradient(135deg,#010611 0%,#061120 48%,#020916 100%); }
@@ -138,7 +205,7 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
     html[data-theme="dark"] .metric, html[data-theme="dark"] .box { background:rgba(5,16,31,.66); border-color:rgba(132,169,208,.14); }
     html[data-theme="dark"] .button { background:rgba(4,13,27,.62); color:#dce6f3; border-color:rgba(132,169,208,.22); box-shadow:none; }
     html[data-theme="dark"] .button.primary { border-color:rgba(64,155,255,.58); background:linear-gradient(180deg,rgba(29,143,255,.78),rgba(15,73,140,.78)); color:white; }
-    html[data-theme="dark"] td, html[data-theme="dark"] .article-section p { color:#dce6f3; }
+    html[data-theme="dark"] td, html[data-theme="dark"] .article-section p, html[data-theme="dark"] .markdown-article p { color:#dce6f3; }
     html[data-theme="dark"] ul { color:#abb8c9; }
     .theme-choice.active { border-color:var(--blue); color:white; background:linear-gradient(180deg,#2d82ee,#1769d8); }
     @media (max-width:900px) { .shell { grid-template-columns:1fr; } .hero { align-items:flex-start; flex-direction:column; } .sections, .metrics, .two { grid-template-columns:1fr; } }
@@ -164,11 +231,11 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
         <div class="actions"><button class="button theme-choice" data-theme-choice="light" type="button">Light</button><button class="button theme-choice" data-theme-choice="dark" type="button">Dark</button><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
       </section>
       <section class="grid">
-        <article class="card"><div class="card-title"><h2>LLM 收盘长文</h2><span class="stamp">${escapeHtml(article?.provider === 'openai' ? `OpenAI · ${article.model ?? 'model'}` : 'Template fallback')}</span></div><div class="sections article-grid">${renderArticleSections(article)}</div></article>
+        <article class="card"><div class="card-title"><h2>每日盘后总结</h2><span class="stamp">${chatGptArticle ? 'FinanceDailyReport · ChatGPT/latest.md' : escapeHtml(article?.provider === 'openai' ? `OpenAI · ${article.model ?? 'model'}` : 'Template fallback')}</span></div>${chatGptArticle ? `<div class="markdown-article">${chatGptArticle.html}</div><div class="sections"><section class="box"><h3>Source</h3><p><a href="${escapeHtml(chatGptArticle.sourceUrl)}" target="_blank" rel="noreferrer">Open ChatGPT/latest.md</a></p></section></div>` : `<div class="sections article-grid">${renderArticleSections(article)}</div>`}</article>
         <article class="card"><div class="card-title"><h2>结构化收盘数据</h2><span class="stamp">Generated ${escapeHtml(formatDateTime(summary.generatedAt))}</span></div><div class="metrics">${rows(indices.slice(0, 5), ([symbol, quote]) => `<div class="metric"><span>${escapeHtml(symbol)}</span><strong>${escapeHtml(formatPrice(quote.price))}</strong><em class="${Number(quote.percent) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</em></div>`)}</div><div class="sections"><section class="box"><h3>今日解读</h3><ul>${rows(summary.summary ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>关键驱动</h3><ul>${rows(summary.drivers ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section></div></article>
         <article class="card"><div class="card-title"><h2>SPX / QQQ / ES 关键位</h2><span class="stamp">Market data ${escapeHtml(formatDateTime(summary.marketDataGeneratedAt))}</span></div><table><thead><tr><th>Asset</th><th>Levels</th></tr></thead><tbody><tr><td>SPX</td><td>${escapeHtml(levelText(summary.levels?.SPX))}</td></tr><tr><td>QQQ</td><td>${escapeHtml(levelText(summary.levels?.QQQ))}</td></tr><tr><td>ES proxy</td><td>${escapeHtml(levelText(summary.levels?.ES))}</td></tr></tbody></table></article>
         <div class="two"><article class="card"><div class="card-title"><h2>明天看什么</h2></div><div class="sections"><section class="box"><h3>观察清单</h3><ul>${rows(summary.tomorrow ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>情景判断</h3><ul>${rows(summary.scenarios ?? [], (item) => `<li><strong>${escapeHtml(item.label)}</strong> ${escapeHtml(item.text)}</li>`)}</ul></section></div></article><article class="card"><div class="card-title"><h2>板块与个股</h2></div><table><thead><tr><th>Group/Symbol</th><th>Move</th><th>Read</th></tr></thead><tbody>${rows([...(summary.sectors?.groups ?? []).slice(0, 4).map((group) => ({ label: group.name, move: group.average, read: `${group.gainers}/${group.count} up` })), ...(summary.movers?.top ?? []).slice(0, 3).map((quote) => ({ label: quote.symbol, move: quote.percent, read: quote.group }))], (row) => `<tr><td>${escapeHtml(row.label)}</td><td class="${Number(row.move) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(row.move))}</td><td>${escapeHtml(row.read)}</td></tr>`)}</tbody></table></article></div>
-        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The article above is generated from the structured dashboard summary. Add OPENAI_API_KEY as a repository secret to use the LLM writer; without it, the template writer keeps the page updated.</p></section></div></article>
+        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://awolf08.github.io/FinanceDailyReport/latest/" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/FinanceDailyReport/tree/main/reports" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The main article above now comes from FinanceDailyReport/ChatGPT/latest.md. The dashboard JSON sections remain available as structured market data below.</p></section></div></article>
       </section>
       <p class="footer-note">This page is generated during deploy from dashboard quote data. It is informational market analysis, not investment advice.</p>
     </main>
