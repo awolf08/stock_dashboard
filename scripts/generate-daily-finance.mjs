@@ -95,8 +95,8 @@ function renderMarkdown(markdown) {
   return html.join('\n');
 }
 
-async function readChatGptLatestMarkdown() {
-  const markdown = await readTextFromUrl(chatGptLatestUrl);
+async function readChatGptLatestMarkdown(markdownOverride) {
+  const markdown = typeof markdownOverride === 'string' ? markdownOverride : await readTextFromUrl(chatGptLatestUrl);
   if (!markdown) return null;
   const title = markdown.split('\n').find((line) => line.startsWith('# '))?.replace(/^#\s+/, '').trim() || 'Daily Market Close Summary';
   return { title, markdown, html: renderMarkdown(markdown), sourceUrl: chatGptLatestUrl };
@@ -132,10 +132,10 @@ function renderArticleSections(article) {
   return rows(article.sections, (section) => `<section class="box article-section"><h3>${escapeHtml(section.heading)}</h3>${rows(section.paragraphs ?? [], (paragraph) => `<p>${escapeHtml(paragraph)}</p>`)}</section>`);
 }
 
-export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
+export async function generateDailyFinance({ outputUrl = outputPath, chatGptMarkdown } = {}) {
   const summary = await readSummary();
   const article = await readArticle();
-  const chatGptArticle = await readChatGptLatestMarkdown();
+  const chatGptArticle = await readChatGptLatestMarkdown(chatGptMarkdown);
   const indices = Object.entries(summary.indices ?? {}).filter(([, quote]) => quote);
   const html = `<!doctype html>
 <html lang="en" data-theme="light">
@@ -227,7 +227,7 @@ export async function generateDailyFinance({ outputUrl = outputPath } = {}) {
     </aside>
     <main>
       <section class="hero">
-        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(summary.title)}</h1><p>Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.</p></div>
+        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(chatGptArticle?.title ?? summary.title)}</h1><p>${chatGptArticle ? 'Pulled from FinanceDailyReport/ChatGPT/latest.md during deploy, with structured dashboard data kept below for levels and metrics.' : 'Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.'}</p></div>
         <div class="actions"><button class="button theme-choice" data-theme-choice="light" type="button">Light</button><button class="button theme-choice" data-theme-choice="dark" type="button">Dark</button><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
       </section>
       <section class="grid">

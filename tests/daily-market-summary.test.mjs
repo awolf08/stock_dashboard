@@ -53,13 +53,18 @@ test('generateDailyMarketSummary creates structured close summary from market da
 test('generateDailyFinance renders the daily summary card', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'daily-finance-page-'));
   const outputPath = join(dir, 'index.html');
-  await generateDailyFinance({ outputUrl: pathToFileURL(outputPath) });
+  await generateDailyFinance({
+    outputUrl: pathToFileURL(outputPath),
+    chatGptMarkdown: '# 2026-09-16 美股收盘总结\n\n## 盘后总结\n\n今天市场围绕 **Fed** 和科技股重新定价。\n\n- SPX 继续测试关键位\n- QQQ 观察资金流向',
+  });
   const html = await readFile(outputPath, 'utf8');
   assert.match(html, /Daily Market Summary/);
   assert.match(html, /结构化收盘数据/);
   assert.match(html, /daily-market-summary\.json/);
   assert.match(html, /daily-market-article\.json/);
-  assert.match(html, /LLM 收盘长文/);
+  assert.match(html, /每日盘后总结/);
+  assert.match(html, /FinanceDailyReport · ChatGPT\/latest\.md/);
+  assert.match(html, /2026-09-16 美股收盘总结/);
 });
 
 
