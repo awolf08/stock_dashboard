@@ -4,7 +4,8 @@ import { generateDailyMarketSummary } from './generate-daily-market-summary.mjs'
 
 const summaryPath = new URL('../public/data/daily-market-summary.json', import.meta.url);
 const articlePath = new URL('../public/data/daily-market-article.json', import.meta.url);
-const chatGptLatestUrl = process.env.DAILY_FINANCE_CHATGPT_MARKDOWN_URL || 'https://raw.githubusercontent.com/awolf08/reports/main/ChatGPT/latest.md';
+const chatGptLatestUrl = process.env.DAILY_FINANCE_CHATGPT_MARKDOWN_URL || 'https://raw.githubusercontent.com/awolf08/FinanceDailyReport/main/ChatGPT/latest.md';
+const chatGptPremarketUrl = process.env.DAILY_FINANCE_CHATGPT_PREMARKET_MARKDOWN_URL || 'https://raw.githubusercontent.com/awolf08/FinanceDailyReport/main/ChatGPT/latest-premarket.md';
 const outputPath = new URL('../public/daily-finance/index.html', import.meta.url);
 
 function escapeHtml(value) {
@@ -95,11 +96,11 @@ function renderMarkdown(markdown) {
   return html.join('\n');
 }
 
-async function readChatGptLatestMarkdown(markdownOverride) {
-  const markdown = typeof markdownOverride === 'string' ? markdownOverride : await readTextFromUrl(chatGptLatestUrl);
+async function readChatGptMarkdown({ url, markdownOverride, fallbackTitle }) {
+  const markdown = typeof markdownOverride === 'string' ? markdownOverride : await readTextFromUrl(url);
   if (!markdown) return null;
-  const title = markdown.split('\n').find((line) => line.startsWith('# '))?.replace(/^#\s+/, '').trim() || 'Daily Market Close Summary';
-  return { title, markdown, html: renderMarkdown(markdown), sourceUrl: chatGptLatestUrl };
+  const title = markdown.split('\n').find((line) => line.startsWith('# '))?.replace(/^#\s+/, '').trim() || fallbackTitle;
+  return { title, markdown, html: renderMarkdown(markdown), sourceUrl: url };
 }
 
 async function readJsonOrNull(url) {
@@ -127,15 +128,20 @@ function themeBodyScript() {
   return `<script>(function(){function apply(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('baybell-theme',t)}catch(e){}document.querySelectorAll('[data-theme-choice]').forEach(function(b){b.classList.toggle('active',b.dataset.themeChoice===t);});}document.querySelectorAll('[data-theme-choice]').forEach(function(b){b.addEventListener('click',function(){apply(b.dataset.themeChoice||'light');});});apply(document.documentElement.dataset.theme||'light');})();</script>`;
 }
 
+function reportTabsScript() {
+  return `<script>(function(){function show(name){document.querySelectorAll('[data-report-panel]').forEach(function(panel){panel.hidden=panel.dataset.reportPanel!==name;});document.querySelectorAll('[data-report-tab]').forEach(function(tab){var active=tab.dataset.reportTab===name;tab.classList.toggle('active',active);tab.setAttribute('aria-selected',active?'true':'false');});}document.querySelectorAll('[data-report-tab]').forEach(function(tab){tab.addEventListener('click',function(){show(tab.dataset.reportTab||'premarket');});});var first=document.querySelector('[data-report-tab].active')||document.querySelector('[data-report-tab]');if(first)show(first.dataset.reportTab||'premarket');})();</script>`;
+}
+
 function renderArticleSections(article) {
   if (!article?.sections?.length) return '';
   return rows(article.sections, (section) => `<section class="box article-section"><h3>${escapeHtml(section.heading)}</h3>${rows(section.paragraphs ?? [], (paragraph) => `<p>${escapeHtml(paragraph)}</p>`)}</section>`);
 }
 
-export async function generateDailyFinance({ outputUrl = outputPath, chatGptMarkdown } = {}) {
+export async function generateDailyFinance({ outputUrl = outputPath, chatGptMarkdown, chatGptPremarketMarkdown } = {}) {
   const summary = await readSummary();
   const article = await readArticle();
-  const chatGptArticle = await readChatGptLatestMarkdown(chatGptMarkdown);
+  const chatGptArticle = await readChatGptMarkdown({ url: chatGptLatestUrl, markdownOverride: chatGptMarkdown, fallbackTitle: 'Daily Market Close Summary' });
+  const chatGptPremarketArticle = await readChatGptMarkdown({ url: chatGptPremarketUrl, markdownOverride: chatGptPremarketMarkdown, fallbackTitle: 'Daily Market Premarket Analysis' });
   const indices = Object.entries(summary.indices ?? {}).filter(([, quote]) => quote);
   const html = `<!doctype html>
 <html lang="en" data-theme="light">
@@ -183,6 +189,10 @@ export async function generateDailyFinance({ outputUrl = outputPath, chatGptMark
     td { color:#25354d; }
     .up { color:var(--green); } .down { color:var(--red); } .amber { color:var(--amber); }
     .article-grid { grid-template-columns:1fr; }
+    .report-tabs { display:flex; gap:10px; flex-wrap:wrap; padding:14px 18px; border-bottom:1px solid var(--border); background:#f8fafc; }
+    .report-tab { min-height:36px; border:1px solid #cdd8e7; border-radius:999px; background:white; color:#25354d; padding:0 16px; font-weight:800; cursor:pointer; }
+    .report-tab.active { border-color:#1769d8; background:linear-gradient(180deg,#2d82ee,#1769d8); color:white; }
+    [data-report-panel][hidden] { display:none; }
     .article-section p { color:#334155; font-size:15px; }
     .article-section p + p { margin-top:12px; }
     .markdown-article { padding:18px; }
@@ -203,6 +213,8 @@ export async function generateDailyFinance({ outputUrl = outputPath, chatGptMark
     html[data-theme="dark"] h1, html[data-theme="dark"] h2, html[data-theme="dark"] h3, html[data-theme="dark"] .metric strong { color:#eef5ff; }
     html[data-theme="dark"] .card-title, html[data-theme="dark"] .metrics, html[data-theme="dark"] th { background:rgba(5,16,31,.48); border-color:rgba(132,169,208,.16); }
     html[data-theme="dark"] .metric, html[data-theme="dark"] .box { background:rgba(5,16,31,.66); border-color:rgba(132,169,208,.14); }
+    html[data-theme="dark"] .report-tabs { background:rgba(5,16,31,.48); border-color:rgba(132,169,208,.16); }
+    html[data-theme="dark"] .report-tab { background:rgba(4,13,27,.62); color:#dce6f3; border-color:rgba(132,169,208,.22); }
     html[data-theme="dark"] .button { background:rgba(4,13,27,.62); color:#dce6f3; border-color:rgba(132,169,208,.22); box-shadow:none; }
     html[data-theme="dark"] .button.primary { border-color:rgba(64,155,255,.58); background:linear-gradient(180deg,rgba(29,143,255,.78),rgba(15,73,140,.78)); color:white; }
     html[data-theme="dark"] td, html[data-theme="dark"] .article-section p, html[data-theme="dark"] .markdown-article p { color:#dce6f3; }
@@ -227,20 +239,21 @@ export async function generateDailyFinance({ outputUrl = outputPath, chatGptMark
     </aside>
     <main>
       <section class="hero">
-        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(chatGptArticle?.title ?? summary.title)}</h1><p>${chatGptArticle ? 'Pulled from reports/ChatGPT/latest.md during deploy, with structured dashboard data kept below for levels and metrics.' : 'Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.'}</p></div>
+        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(chatGptPremarketArticle?.title ?? chatGptArticle?.title ?? summary.title)}</h1><p>${chatGptPremarketArticle || chatGptArticle ? 'Pulled from FinanceDailyReport/ChatGPT markdown during deploy, with structured dashboard data kept below for levels and metrics.' : 'Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.'}</p></div>
         <div class="actions"><button class="button theme-choice" data-theme-choice="light" type="button">Light</button><button class="button theme-choice" data-theme-choice="dark" type="button">Dark</button><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
       </section>
       <section class="grid">
-        <article class="card"><div class="card-title"><h2>每日盘后总结</h2><span class="stamp">${chatGptArticle ? 'reports · ChatGPT/latest.md' : escapeHtml(article?.provider === 'openai' ? `OpenAI · ${article.model ?? 'model'}` : 'Template fallback')}</span></div>${chatGptArticle ? `<div class="markdown-article">${chatGptArticle.html}</div><div class="sections"><section class="box"><h3>Source</h3><p><a href="${escapeHtml(chatGptArticle.sourceUrl)}" target="_blank" rel="noreferrer">Open ChatGPT/latest.md</a></p></section></div>` : `<div class="sections article-grid">${renderArticleSections(article)}</div>`}</article>
+        <article class="card"><div class="card-title"><h2>每日金融分析</h2><span class="stamp">${chatGptPremarketArticle ? 'FinanceDailyReport · ChatGPT/latest-premarket.md' : chatGptArticle ? 'FinanceDailyReport · ChatGPT/latest.md' : escapeHtml(article?.provider === 'openai' ? `OpenAI · ${article.model ?? 'model'}` : 'Template fallback')}</span></div>${chatGptPremarketArticle || chatGptArticle ? `<div class="report-tabs" role="tablist" aria-label="Daily finance reports">${chatGptPremarketArticle ? `<button class="report-tab active" data-report-tab="premarket" type="button" role="tab" aria-selected="true">盘前分析</button>` : ''}${chatGptArticle ? `<button class="report-tab ${chatGptPremarketArticle ? '' : 'active'}" data-report-tab="close" type="button" role="tab" aria-selected="${chatGptPremarketArticle ? 'false' : 'true'}">盘后总结</button>` : ''}</div>${chatGptPremarketArticle ? `<div class="markdown-article" data-report-panel="premarket">${chatGptPremarketArticle.html}<div class="sections"><section class="box"><h3>Source</h3><p><a href="${escapeHtml(chatGptPremarketArticle.sourceUrl)}" target="_blank" rel="noreferrer">Open ChatGPT/latest-premarket.md</a></p></section></div></div>` : ''}${chatGptArticle ? `<div class="markdown-article" data-report-panel="close" ${chatGptPremarketArticle ? 'hidden' : ''}>${chatGptArticle.html}<div class="sections"><section class="box"><h3>Source</h3><p><a href="${escapeHtml(chatGptArticle.sourceUrl)}" target="_blank" rel="noreferrer">Open ChatGPT/latest.md</a></p></section></div></div>` : ''}` : `<div class="sections article-grid">${renderArticleSections(article)}</div>`}</article>
         <article class="card"><div class="card-title"><h2>结构化收盘数据</h2><span class="stamp">Generated ${escapeHtml(formatDateTime(summary.generatedAt))}</span></div><div class="metrics">${rows(indices.slice(0, 5), ([symbol, quote]) => `<div class="metric"><span>${escapeHtml(symbol)}</span><strong>${escapeHtml(formatPrice(quote.price))}</strong><em class="${Number(quote.percent) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</em></div>`)}</div><div class="sections"><section class="box"><h3>今日解读</h3><ul>${rows(summary.summary ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>关键驱动</h3><ul>${rows(summary.drivers ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section></div></article>
         <article class="card"><div class="card-title"><h2>SPX / QQQ / ES 关键位</h2><span class="stamp">Market data ${escapeHtml(formatDateTime(summary.marketDataGeneratedAt))}</span></div><table><thead><tr><th>Asset</th><th>Levels</th></tr></thead><tbody><tr><td>SPX</td><td>${escapeHtml(levelText(summary.levels?.SPX))}</td></tr><tr><td>QQQ</td><td>${escapeHtml(levelText(summary.levels?.QQQ))}</td></tr><tr><td>ES proxy</td><td>${escapeHtml(levelText(summary.levels?.ES))}</td></tr></tbody></table></article>
         <div class="two"><article class="card"><div class="card-title"><h2>明天看什么</h2></div><div class="sections"><section class="box"><h3>观察清单</h3><ul>${rows(summary.tomorrow ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>情景判断</h3><ul>${rows(summary.scenarios ?? [], (item) => `<li><strong>${escapeHtml(item.label)}</strong> ${escapeHtml(item.text)}</li>`)}</ul></section></div></article><article class="card"><div class="card-title"><h2>板块与个股</h2></div><table><thead><tr><th>Group/Symbol</th><th>Move</th><th>Read</th></tr></thead><tbody>${rows([...(summary.sectors?.groups ?? []).slice(0, 4).map((group) => ({ label: group.name, move: group.average, read: `${group.gainers}/${group.count} up` })), ...(summary.movers?.top ?? []).slice(0, 3).map((quote) => ({ label: quote.symbol, move: quote.percent, read: quote.group }))], (row) => `<tr><td>${escapeHtml(row.label)}</td><td class="${Number(row.move) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(row.move))}</td><td>${escapeHtml(row.read)}</td></tr>`)}</tbody></table></article></div>
-        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://baybell.com/daily-finance/latest.html" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/reports/tree/main/daily-finance" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The main article above now comes from reports/ChatGPT/latest.md. The dashboard JSON sections remain available as structured market data below.</p></section></div></article>
+        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://baybell.com/daily-finance/latest.html" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/reports/tree/main/daily-finance" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The main article above now comes from FinanceDailyReport/ChatGPT/latest-premarket.md and latest.md. The dashboard JSON sections remain available as structured market data below.</p></section></div></article>
       </section>
       <p class="footer-note">This page is generated during deploy from dashboard quote data. It is informational market analysis, not investment advice.</p>
     </main>
   </div>
   ${themeBodyScript()}
+  ${reportTabsScript()}
 </body>
 </html>
 `;

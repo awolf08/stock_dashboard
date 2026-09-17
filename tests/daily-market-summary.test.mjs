@@ -56,14 +56,18 @@ test('generateDailyFinance renders the daily summary card', async () => {
   await generateDailyFinance({
     outputUrl: pathToFileURL(outputPath),
     chatGptMarkdown: '# 2026-09-16 美股收盘总结\n\n## 盘后总结\n\n今天市场围绕 **Fed** 和科技股重新定价。\n\n- SPX 继续测试关键位\n- QQQ 观察资金流向',
+    chatGptPremarketMarkdown: '# 2026-09-17 美股盘前分析\n\n## 盘前重点\n\n今天盘前重点看 **10Y** 和油价。\n\n- NQ 强于 YM\n- 等开盘回踩确认',
   });
   const html = await readFile(outputPath, 'utf8');
   assert.match(html, /Daily Market Summary/);
   assert.match(html, /结构化收盘数据/);
   assert.match(html, /daily-market-summary\.json/);
   assert.match(html, /daily-market-article\.json/);
-  assert.match(html, /每日盘后总结/);
-  assert.match(html, /reports · ChatGPT\/latest\.md/);
+  assert.match(html, /每日金融分析/);
+  assert.match(html, /盘前分析/);
+  assert.match(html, /盘后总结/);
+  assert.match(html, /FinanceDailyReport · ChatGPT\/latest-premarket\.md/);
+  assert.match(html, /2026-09-17 美股盘前分析/);
   assert.match(html, /2026-09-16 美股收盘总结/);
 });
 
