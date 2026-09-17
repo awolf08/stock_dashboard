@@ -24,7 +24,7 @@ test('weekly finance page is generated from market and earnings data', async () 
           { symbol: 'SPY', price: 600, change: 3, percent: 0.5 },
           { symbol: 'QQQ', price: 520, change: 6, percent: 1.16 },
         ] },
-        { name: 'Cloud & Infra', quotes: [
+        { name: 'Software', quotes: [
           { symbol: 'ORCL', price: 250, change: 5, percent: 2 },
           { symbol: 'MSFT', price: 500, change: -5, percent: -1 },
         ] },

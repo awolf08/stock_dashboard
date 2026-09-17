@@ -30,7 +30,7 @@ test('generateDailyMarketSummary creates structured close summary from market da
         { symbol: 'NVDA', price: 212.98, change: 2.02, percent: 0.96 },
         { symbol: 'AMD', price: 165, change: 3.3, percent: 2.04 },
       ] },
-      { name: 'Cloud & Infra', quotes: [
+      { name: 'Software', quotes: [
         { symbol: 'ORCL', price: 190, change: -3, percent: -1.55 },
         { symbol: 'SNOW', price: 210, change: -5, percent: -2.33 },
       ] },
@@ -88,11 +88,11 @@ test('generateDailyMarketArticle writes Chinese article JSON with template fallb
     market: { indexAverage: -0.5, breadth: 0.38 },
     sectors: {
       strongest: { name: 'Semiconductors', average: 1.3, gainers: 4, count: 5 },
-      weakest: { name: 'Cloud & Infra', average: -1.5, gainers: 1, count: 5 },
+      weakest: { name: 'Software', average: -1.5, gainers: 1, count: 5 },
     },
     movers: {
       top: [{ symbol: 'NVDA', percent: 0.96, group: 'Semiconductors' }],
-      weak: [{ symbol: 'SNOW', percent: -2.3, group: 'Cloud & Infra' }],
+      weak: [{ symbol: 'SNOW', percent: -2.3, group: 'Software' }],
     },
     levels: {
       SPX: { support: [7600, 7570, 7550], resistance: [7630, 7650, 7700] },

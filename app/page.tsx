@@ -48,7 +48,7 @@ const themeStorageKey = 'baybell-theme';
 // This is only a public navigation URL. Authentication belongs to the report host.
 const privateReportsUrl = process.env.NEXT_PUBLIC_PRIVATE_REPORTS_URL || 'https://baybell.com/private/';
 const baybellHome = process.env.NEXT_PUBLIC_BAYBELL_HOME === '1';
-const featuredIndexSymbols = ['^GSPC', '^IXIC', '^DJI', '^RUT'];
+const featuredIndexSymbols = ['^GSPC', '^IXIC', '^DJI', '^RUT', 'GC=F', 'CL=F', '^TNX'];
 const refreshQuotesUrl = process.env.NEXT_PUBLIC_REFRESH_QUOTES_URL || '';
 const refreshPollIntervalMs = 20_000;
 const refreshPollTimeoutMs = 5 * 60_000;
