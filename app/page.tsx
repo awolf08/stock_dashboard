@@ -89,6 +89,27 @@ function isAccent(value: unknown): value is Accent {
   return typeof value === 'string' && value in accentClass;
 }
 
+function watchlistTone(category: Category) {
+  const quotes = category.quotes.filter((quote) => Number.isFinite(quote.percent));
+  if (!quotes.length) {
+    return { className: 'dot-neutral', label: 'No current quote data' };
+  }
+  const average = quotes.reduce((sum, quote) => sum + quote.percent, 0) / quotes.length;
+  const gainers = quotes.filter((quote) => quote.percent > 0).length;
+  const losers = quotes.filter((quote) => quote.percent < 0).length;
+  const gainRatio = gainers / quotes.length;
+  const lossRatio = losers / quotes.length;
+  const tone = average > 0.15 && gainRatio >= 0.5
+    ? 'dot-up'
+    : average < -0.15 && lossRatio >= 0.5
+      ? 'dot-down'
+      : 'dot-neutral';
+  return {
+    className: tone,
+    label: `${formatSigned(average)}% average · ${gainers}/${quotes.length} up · ${losers}/${quotes.length} down`,
+  };
+}
+
 
 function todayInPacific() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -487,15 +508,18 @@ export default function Home() {
               <Plus size={16} />
             </button>
           </div>
-          {categories.map((category) => (
-            <div className="watchlist-row" key={category.name}>
-              <span className={`dot ${accentClass[category.accent]}`} />
-              <span>{category.name}</span>
-              <button aria-label={`Delete ${category.name}`} onClick={() => deleteCategory(category.name)}>
-                <X size={14} />
-              </button>
-            </div>
-          ))}
+          {categories.map((category) => {
+            const tone = watchlistTone(category);
+            return (
+              <div className="watchlist-row" key={category.name} title={tone.label}>
+                <span className={`dot ${tone.className}`} aria-label={tone.label} />
+                <span>{category.name}</span>
+                <button aria-label={`Delete ${category.name}`} onClick={() => deleteCategory(category.name)}>
+                  <X size={14} />
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         <div className="sidebar-footer">

@@ -267,8 +267,24 @@ button {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #52dc8d;
-  box-shadow: 0 0 14px rgba(82, 220, 141, 0.35);
+  background: #94a3b8;
+  box-shadow: 0 0 14px rgba(148, 163, 184, 0.28);
+}
+
+.dot-up,
+.status-dot {
+  background: #00873c;
+  box-shadow: 0 0 14px rgba(0, 135, 60, 0.36);
+}
+
+.dot-down {
+  background: #e60000;
+  box-shadow: 0 0 14px rgba(230, 0, 0, 0.32);
+}
+
+.dot-neutral {
+  background: #94a3b8;
+  box-shadow: 0 0 14px rgba(148, 163, 184, 0.28);
 }
 
 .sidebar-footer {
