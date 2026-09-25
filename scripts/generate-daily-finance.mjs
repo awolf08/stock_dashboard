@@ -46,10 +46,16 @@ function levelText(levels) {
 }
 
 
+function cacheBustedUrl(value) {
+  const url = new URL(value);
+  url.searchParams.set('cacheBust', String(Date.now()));
+  return url;
+}
+
 async function readTextFromUrl(url) {
   try {
-    const response = await fetch(url, {
-      headers: { 'user-agent': 'baybell-daily-finance-generator' },
+    const response = await fetch(cacheBustedUrl(url), {
+      headers: { 'user-agent': 'baybell-daily-finance-generator', 'cache-control': 'no-cache' },
       signal: AbortSignal.timeout(15000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
