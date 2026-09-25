@@ -4,8 +4,10 @@ import { generateDailyMarketSummary } from './generate-daily-market-summary.mjs'
 
 const summaryPath = new URL('../public/data/daily-market-summary.json', import.meta.url);
 const articlePath = new URL('../public/data/daily-market-article.json', import.meta.url);
-const chatGptLatestUrl = process.env.DAILY_FINANCE_CHATGPT_MARKDOWN_URL || 'https://raw.githubusercontent.com/awolf08/FinanceDailyReport/main/ChatGPT/latest.md';
-const chatGptPremarketUrl = process.env.DAILY_FINANCE_CHATGPT_PREMARKET_MARKDOWN_URL || 'https://raw.githubusercontent.com/awolf08/FinanceDailyReport/main/ChatGPT/latest-premarket.md';
+const chatGptLatestUrl = process.env.DAILY_FINANCE_CHATGPT_MARKDOWN_URL || 'https://api.github.com/repos/awolf08/FinanceDailyReport/contents/ChatGPT/latest.md';
+const chatGptPremarketUrl = process.env.DAILY_FINANCE_CHATGPT_PREMARKET_MARKDOWN_URL || 'https://api.github.com/repos/awolf08/FinanceDailyReport/contents/ChatGPT/latest-premarket.md';
+const chatGptLatestSourceUrl = 'https://github.com/awolf08/FinanceDailyReport/blob/main/ChatGPT/latest.md';
+const chatGptPremarketSourceUrl = 'https://github.com/awolf08/FinanceDailyReport/blob/main/ChatGPT/latest-premarket.md';
 const outputPath = new URL('../public/daily-finance/index.html', import.meta.url);
 
 function escapeHtml(value) {
@@ -55,7 +57,7 @@ function cacheBustedUrl(value) {
 async function readTextFromUrl(url) {
   try {
     const response = await fetch(cacheBustedUrl(url), {
-      headers: { 'user-agent': 'baybell-daily-finance-generator', 'cache-control': 'no-cache' },
+      headers: { accept: 'application/vnd.github.raw', 'user-agent': 'baybell-daily-finance-generator', 'cache-control': 'no-cache' },
       signal: AbortSignal.timeout(15000),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -102,11 +104,11 @@ function renderMarkdown(markdown) {
   return html.join('\n');
 }
 
-async function readChatGptMarkdown({ url, markdownOverride, fallbackTitle }) {
+async function readChatGptMarkdown({ url, sourceUrl, markdownOverride, fallbackTitle }) {
   const markdown = typeof markdownOverride === 'string' ? markdownOverride : await readTextFromUrl(url);
   if (!markdown) return null;
   const title = markdown.split('\n').find((line) => line.startsWith('# '))?.replace(/^#\s+/, '').trim() || fallbackTitle;
-  return { title, markdown, html: renderMarkdown(markdown), sourceUrl: url };
+  return { title, markdown, html: renderMarkdown(markdown), sourceUrl: sourceUrl ?? url };
 }
 
 async function readJsonOrNull(url) {
@@ -146,8 +148,8 @@ function renderArticleSections(article) {
 export async function generateDailyFinance({ outputUrl = outputPath, chatGptMarkdown, chatGptPremarketMarkdown } = {}) {
   const summary = await readSummary();
   const article = await readArticle();
-  const chatGptArticle = await readChatGptMarkdown({ url: chatGptLatestUrl, markdownOverride: chatGptMarkdown, fallbackTitle: 'Daily Market Close Summary' });
-  const chatGptPremarketArticle = await readChatGptMarkdown({ url: chatGptPremarketUrl, markdownOverride: chatGptPremarketMarkdown, fallbackTitle: 'Daily Market Premarket Analysis' });
+  const chatGptArticle = await readChatGptMarkdown({ url: chatGptLatestUrl, sourceUrl: chatGptLatestSourceUrl, markdownOverride: chatGptMarkdown, fallbackTitle: 'Daily Market Close Summary' });
+  const chatGptPremarketArticle = await readChatGptMarkdown({ url: chatGptPremarketUrl, sourceUrl: chatGptPremarketSourceUrl, markdownOverride: chatGptPremarketMarkdown, fallbackTitle: 'Daily Market Premarket Analysis' });
   const indices = Object.entries(summary.indices ?? {}).filter(([, quote]) => quote);
   const html = `<!doctype html>
 <html lang="en" data-theme="light">
