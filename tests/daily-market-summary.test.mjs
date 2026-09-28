@@ -66,7 +66,7 @@ test('generateDailyFinance renders the daily summary card', async () => {
   assert.match(html, /每日金融分析/);
   assert.match(html, /盘前分析/);
   assert.match(html, /盘后总结/);
-  assert.match(html, /Baybell Reports · daily-finance\/latest/);
+  assert.match(html, /Baybell Reports · ChatGPT\/latest-premarket\.md/);
   assert.match(html, /2026-09-17 美股盘前分析/);
   assert.match(html, /2026-09-16 美股收盘总结/);
 });
