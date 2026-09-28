@@ -4,10 +4,11 @@ import { generateDailyMarketSummary } from './generate-daily-market-summary.mjs'
 
 const summaryPath = new URL('../public/data/daily-market-summary.json', import.meta.url);
 const articlePath = new URL('../public/data/daily-market-article.json', import.meta.url);
-const chatGptLatestUrl = process.env.DAILY_FINANCE_CHATGPT_MARKDOWN_URL || 'https://api.github.com/repos/awolf08/FinanceDailyReport/contents/ChatGPT/latest.md';
-const chatGptPremarketUrl = process.env.DAILY_FINANCE_CHATGPT_PREMARKET_MARKDOWN_URL || 'https://api.github.com/repos/awolf08/FinanceDailyReport/contents/ChatGPT/latest-premarket.md';
-const chatGptLatestSourceUrl = 'https://github.com/awolf08/FinanceDailyReport/blob/main/ChatGPT/latest.md';
-const chatGptPremarketSourceUrl = 'https://github.com/awolf08/FinanceDailyReport/blob/main/ChatGPT/latest-premarket.md';
+const reportsRepoApiBase = process.env.DAILY_FINANCE_REPORTS_API_BASE || 'https://api.github.com/repos/awolf08/reports/contents';
+const reportsRepoSourceBase = process.env.DAILY_FINANCE_REPORTS_SOURCE_BASE || 'https://github.com/awolf08/reports/blob/main';
+const chatGptLatestUrl = process.env.DAILY_FINANCE_CHATGPT_MARKDOWN_URL || `${reportsRepoApiBase}/ChatGPT/latest.md`;
+const dailyReportFolderUrl = process.env.DAILY_FINANCE_REPORT_FOLDER_URL || `${reportsRepoApiBase}/daily-finance`;
+const chatGptLatestSourceUrl = `${reportsRepoSourceBase}/ChatGPT/latest.md`;
 const outputPath = new URL('../public/daily-finance/index.html', import.meta.url);
 
 function escapeHtml(value) {
@@ -54,18 +55,48 @@ function cacheBustedUrl(value) {
   return url;
 }
 
+async function fetchUrl(url, { accept = 'application/vnd.github.raw' } = {}) {
+  const response = await fetch(cacheBustedUrl(url), {
+    headers: { accept, 'user-agent': 'baybell-daily-finance-generator', 'cache-control': 'no-cache' },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response;
+}
+
 async function readTextFromUrl(url) {
   try {
-    const response = await fetch(cacheBustedUrl(url), {
-      headers: { accept: 'application/vnd.github.raw', 'user-agent': 'baybell-daily-finance-generator', 'cache-control': 'no-cache' },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const response = await fetchUrl(url);
     const text = await response.text();
     return text.trim() ? text : null;
   } catch {
     return null;
   }
+}
+
+async function readJsonFromUrl(url) {
+  try {
+    const response = await fetchUrl(url, { accept: 'application/vnd.github+json' });
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+async function readLatestDailyReportMarkdown({ folderUrl = dailyReportFolderUrl } = {}) {
+  const entries = await readJsonFromUrl(folderUrl);
+  if (!Array.isArray(entries)) return null;
+  const latest = entries
+    .filter((entry) => /^\d{4}-\d{2}-\d{2}\.md$/.test(entry.name ?? ''))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+    .at(-1);
+  if (!latest?.name) return null;
+  const apiUrl = `${folderUrl.replace(/\/$/, '')}/${latest.name}`;
+  const markdown = await readTextFromUrl(apiUrl);
+  if (!markdown) return null;
+  const sourceUrl = `${reportsRepoSourceBase}/daily-finance/${latest.name}`;
+  const title = markdown.split('\n').find((line) => line.startsWith('# '))?.replace(/^#\s+/, '').trim() || 'Daily Finance Report';
+  return { title, markdown, html: renderMarkdown(markdown), sourceUrl, label: `Baybell Reports · daily-finance/${latest.name}` };
 }
 
 function inlineMarkdown(value) {
@@ -149,7 +180,9 @@ export async function generateDailyFinance({ outputUrl = outputPath, chatGptMark
   const summary = await readSummary();
   const article = await readArticle();
   const chatGptArticle = await readChatGptMarkdown({ url: chatGptLatestUrl, sourceUrl: chatGptLatestSourceUrl, markdownOverride: chatGptMarkdown, fallbackTitle: 'Daily Market Close Summary' });
-  const chatGptPremarketArticle = await readChatGptMarkdown({ url: chatGptPremarketUrl, sourceUrl: chatGptPremarketSourceUrl, markdownOverride: chatGptPremarketMarkdown, fallbackTitle: 'Daily Market Premarket Analysis' });
+  const chatGptPremarketArticle = typeof chatGptPremarketMarkdown === 'string'
+    ? await readChatGptMarkdown({ url: dailyReportFolderUrl, sourceUrl: `${reportsRepoSourceBase}/daily-finance`, markdownOverride: chatGptPremarketMarkdown, fallbackTitle: 'Daily Market Premarket Analysis' })
+    : await readLatestDailyReportMarkdown();
   const indices = Object.entries(summary.indices ?? {}).filter(([, quote]) => quote);
   const html = `<!doctype html>
 <html lang="en" data-theme="light">
@@ -247,15 +280,15 @@ export async function generateDailyFinance({ outputUrl = outputPath, chatGptMark
     </aside>
     <main>
       <section class="hero">
-        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(chatGptPremarketArticle?.title ?? chatGptArticle?.title ?? summary.title)}</h1><p>${chatGptPremarketArticle || chatGptArticle ? 'Pulled from FinanceDailyReport/ChatGPT markdown during deploy, with structured dashboard data kept below for levels and metrics.' : 'Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.'}</p></div>
+        <div><span class="eyebrow">Daily Market Summary</span><h1>${escapeHtml(chatGptPremarketArticle?.title ?? chatGptArticle?.title ?? summary.title)}</h1><p>${chatGptPremarketArticle || chatGptArticle ? 'Pulled from the Baybell Reports repository during deploy, with structured dashboard data kept below for levels and metrics.' : 'Generated from the latest dashboard quote snapshot, then expanded into a Chinese close-report article. If OpenAI is configured, this uses the LLM writer; otherwise it falls back to a deterministic template.'}</p></div>
         <div class="actions"><button class="button theme-choice" data-theme-choice="light" type="button">Light</button><button class="button theme-choice" data-theme-choice="dark" type="button">Dark</button><a class="button" href="/">Dashboard</a><a class="button primary" href="/data/daily-market-article.json">Open Article JSON</a><a class="button" href="/data/daily-market-summary.json">Open Data JSON</a></div>
       </section>
       <section class="grid">
-        <article class="card"><div class="card-title"><h2>每日金融分析</h2><span class="stamp">${chatGptPremarketArticle ? 'FinanceDailyReport · ChatGPT/latest-premarket.md' : chatGptArticle ? 'FinanceDailyReport · ChatGPT/latest.md' : escapeHtml(article?.provider === 'openai' ? `OpenAI · ${article.model ?? 'model'}` : 'Template fallback')}</span></div>${chatGptPremarketArticle || chatGptArticle ? `<div class="report-tabs" role="tablist" aria-label="Daily finance reports">${chatGptPremarketArticle ? `<button class="report-tab active" data-report-tab="premarket" type="button" role="tab" aria-selected="true">盘前分析</button>` : ''}${chatGptArticle ? `<button class="report-tab ${chatGptPremarketArticle ? '' : 'active'}" data-report-tab="close" type="button" role="tab" aria-selected="${chatGptPremarketArticle ? 'false' : 'true'}">盘后总结</button>` : ''}</div>${chatGptPremarketArticle ? `<div class="markdown-article" data-report-panel="premarket">${chatGptPremarketArticle.html}<div class="sections"><section class="box"><h3>Source</h3><p><a href="${escapeHtml(chatGptPremarketArticle.sourceUrl)}" target="_blank" rel="noreferrer">Open ChatGPT/latest-premarket.md</a></p></section></div></div>` : ''}${chatGptArticle ? `<div class="markdown-article" data-report-panel="close" ${chatGptPremarketArticle ? 'hidden' : ''}>${chatGptArticle.html}<div class="sections"><section class="box"><h3>Source</h3><p><a href="${escapeHtml(chatGptArticle.sourceUrl)}" target="_blank" rel="noreferrer">Open ChatGPT/latest.md</a></p></section></div></div>` : ''}` : `<div class="sections article-grid">${renderArticleSections(article)}</div>`}</article>
+        <article class="card"><div class="card-title"><h2>每日金融分析</h2><span class="stamp">${chatGptPremarketArticle ? escapeHtml(chatGptPremarketArticle.label ?? 'Baybell Reports · daily-finance/latest') : chatGptArticle ? 'Baybell Reports · ChatGPT/latest.md' : escapeHtml(article?.provider === 'openai' ? `OpenAI · ${article.model ?? 'model'}` : 'Template fallback')}</span></div>${chatGptPremarketArticle || chatGptArticle ? `<div class="report-tabs" role="tablist" aria-label="Daily finance reports">${chatGptPremarketArticle ? `<button class="report-tab active" data-report-tab="premarket" type="button" role="tab" aria-selected="true">盘前分析</button>` : ''}${chatGptArticle ? `<button class="report-tab ${chatGptPremarketArticle ? '' : 'active'}" data-report-tab="close" type="button" role="tab" aria-selected="${chatGptPremarketArticle ? 'false' : 'true'}">盘后总结</button>` : ''}</div>${chatGptPremarketArticle ? `<div class="markdown-article" data-report-panel="premarket">${chatGptPremarketArticle.html}<div class="sections"><section class="box"><h3>Source</h3><p><a href="${escapeHtml(chatGptPremarketArticle.sourceUrl)}" target="_blank" rel="noreferrer">Open latest daily report</a></p></section></div></div>` : ''}${chatGptArticle ? `<div class="markdown-article" data-report-panel="close" ${chatGptPremarketArticle ? 'hidden' : ''}>${chatGptArticle.html}<div class="sections"><section class="box"><h3>Source</h3><p><a href="${escapeHtml(chatGptArticle.sourceUrl)}" target="_blank" rel="noreferrer">Open ChatGPT/latest.md</a></p></section></div></div>` : ''}` : `<div class="sections article-grid">${renderArticleSections(article)}</div>`}</article>
         <article class="card"><div class="card-title"><h2>结构化收盘数据</h2><span class="stamp">Generated ${escapeHtml(formatDateTime(summary.generatedAt))}</span></div><div class="metrics">${rows(indices.slice(0, 5), ([symbol, quote]) => `<div class="metric"><span>${escapeHtml(symbol)}</span><strong>${escapeHtml(formatPrice(quote.price))}</strong><em class="${Number(quote.percent) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(quote.percent))}</em></div>`)}</div><div class="sections"><section class="box"><h3>今日解读</h3><ul>${rows(summary.summary ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>关键驱动</h3><ul>${rows(summary.drivers ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section></div></article>
         <article class="card"><div class="card-title"><h2>SPX / QQQ / ES 关键位</h2><span class="stamp">Market data ${escapeHtml(formatDateTime(summary.marketDataGeneratedAt))}</span></div><table><thead><tr><th>Asset</th><th>Levels</th></tr></thead><tbody><tr><td>SPX</td><td>${escapeHtml(levelText(summary.levels?.SPX))}</td></tr><tr><td>QQQ</td><td>${escapeHtml(levelText(summary.levels?.QQQ))}</td></tr><tr><td>ES proxy</td><td>${escapeHtml(levelText(summary.levels?.ES))}</td></tr></tbody></table></article>
         <div class="two"><article class="card"><div class="card-title"><h2>明天看什么</h2></div><div class="sections"><section class="box"><h3>观察清单</h3><ul>${rows(summary.tomorrow ?? [], (item) => `<li>${escapeHtml(item)}</li>`)}</ul></section><section class="box"><h3>情景判断</h3><ul>${rows(summary.scenarios ?? [], (item) => `<li><strong>${escapeHtml(item.label)}</strong> ${escapeHtml(item.text)}</li>`)}</ul></section></div></article><article class="card"><div class="card-title"><h2>板块与个股</h2></div><table><thead><tr><th>Group/Symbol</th><th>Move</th><th>Read</th></tr></thead><tbody>${rows([...(summary.sectors?.groups ?? []).slice(0, 4).map((group) => ({ label: group.name, move: group.average, read: `${group.gainers}/${group.count} up` })), ...(summary.movers?.top ?? []).slice(0, 3).map((quote) => ({ label: quote.symbol, move: quote.percent, read: quote.group }))], (row) => `<tr><td>${escapeHtml(row.label)}</td><td class="${Number(row.move) >= 0 ? 'up' : 'down'}">${escapeHtml(formatPercent(row.move))}</td><td>${escapeHtml(row.read)}</td></tr>`)}</tbody></table></article></div>
-        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the original FinanceDailyReport output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://baybell.com/daily-finance/latest.html" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/reports/tree/main/daily-finance" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The main article above now comes from FinanceDailyReport/ChatGPT/latest-premarket.md and latest.md. The dashboard JSON sections remain available as structured market data below.</p></section></div></article>
+        <article class="card"><div class="card-title"><h2>Yahoo-style Daily Report</h2></div><div class="sections"><section class="box"><h3>Legacy Generated Report</h3><p>Open the generated Baybell Reports output with the Yahoo-style market report layout.</p><div class="actions"><a class="button primary" href="https://baybell.com/daily-finance/latest.html" target="_blank" rel="noreferrer">Open Latest Report</a><a class="button" href="https://github.com/awolf08/reports/tree/main/daily-finance" target="_blank" rel="noreferrer">Open Report Archive</a></div></section><section class="box"><h3>Next Upgrade</h3><p>The main article above now comes from awolf08/reports daily-finance archive and ChatGPT/latest.md. The dashboard JSON sections remain available as structured market data below.</p></section></div></article>
       </section>
       <p class="footer-note">This page is generated during deploy from dashboard quote data. It is informational market analysis, not investment advice.</p>
     </main>
