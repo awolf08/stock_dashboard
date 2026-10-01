@@ -366,6 +366,18 @@ export default function Home() {
   const stale = generatedAt ? snapshotIsStale(generatedAt, now) : false;
   const dataStatus = loadError ? 'Update unavailable' : !generatedAt ? 'Loading quotes' : stale ? 'Snapshot overdue' : 'Hourly snapshot';
 
+  function navigateToPage(nextPage: Page) {
+    setPage(nextPage);
+    const url = new URL(window.location.href);
+    if (nextPage === 'overview') {
+      url.searchParams.delete('page');
+    } else {
+      url.searchParams.set('page', nextPage);
+    }
+    url.hash = '';
+    window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
+  }
+
   const breadth = useMemo(() => {
     const all = categories.flatMap((category) => category.quotes);
     return {
@@ -481,8 +493,8 @@ export default function Home() {
         </div>
 
         <nav className="primary-nav" aria-label="Main navigation">
-          <NavItem icon={<HomeIcon size={18} />} label="Overview" active={page === 'overview'} onClick={() => setPage('overview')} />
-          <NavItem icon={<CalendarDays size={18} />} label="Events" active={page === 'events'} onClick={() => setPage('events')} />
+          <NavItem icon={<HomeIcon size={18} />} label="Overview" active={page === 'overview'} onClick={() => navigateToPage('overview')} />
+          <NavItem icon={<CalendarDays size={18} />} label="Events" active={page === 'events'} onClick={() => navigateToPage('events')} />
           {baybellHome ? (
             <>
               <a className="nav-item" href="/daily-finance/"><FileText size={18} /><span>Daily Finance</span></a>
@@ -490,7 +502,7 @@ export default function Home() {
               <a className="nav-item" href="/guru-position/"><BarChart3 size={18} /><span>Guru Positions</span></a>
               <a className="nav-item" href="https://options.baybell.com"><FileText size={18} /><span>Options</span></a>
             </>
-          ) : <NavItem icon={<FileText size={18} />} label="Reports" active={page === 'reports'} onClick={() => setPage('reports')} />}
+          ) : <NavItem icon={<FileText size={18} />} label="Reports" active={page === 'reports'} onClick={() => navigateToPage('reports')} />}
           {privateReportsUrl && (
             <a className="nav-item" href={privateReportsUrl}>
               <LockKeyhole size={18} />
