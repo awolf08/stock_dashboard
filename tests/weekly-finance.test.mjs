@@ -46,6 +46,8 @@ test('weekly finance page is generated from market and earnings data', async () 
     assert.equal(summary.quoteCount, 6);
     assert.equal(summary.earningsCount, 1);
     assert.match(html, /Weekly Finance · Real Data/);
+    assert.match(html, /<link rel="icon" href="\/favicon\.svg" type="image\/svg\+xml">/);
+    assert.match(html, /<link rel="shortcut icon" href="\/favicon\.svg">/);
     assert.match(html, /S&amp;P 500/);
     assert.match(html, /ORCL/);
     assert.match(html, /After Close/);
