@@ -2,14 +2,19 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
-const dayMs = 24 * 60 * 60 * 1000;
-
-function dayString(date) {
-  return date.toISOString().slice(0, 10);
+function dayStringInPacific(date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
 }
 
-function addDays(date, days) {
-  return new Date(date.getTime() + days * dayMs);
+function addDaysToDay(day, days) {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function normalizeSession(hour) {
@@ -92,8 +97,8 @@ export async function updateEventsData({
     throw new Error('Set FINNHUB_API_KEY to a real key. No demo event data will be generated.');
   }
   watchlist ??= JSON.parse(await readFile(new URL('../config/watchlist.json', import.meta.url), 'utf8'));
-  const from = dayString(now);
-  const to = dayString(addDays(now, 7));
+  const from = dayStringInPacific(now);
+  const to = addDaysToDay(from, 7);
   const watchlistSet = watchlistSymbols(watchlist);
   const rawEvents = await fetchEarningsCalendar({ apiKey, from, to, fetchImpl, sleep });
   const earnings = rawEvents

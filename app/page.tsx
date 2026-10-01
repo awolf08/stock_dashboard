@@ -770,17 +770,19 @@ function QuotePanel({
 }
 
 function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]; generatedAt: string | null; hasError: boolean }) {
-  const [activeFilter, setActiveFilter] = useState('Today');
+  const [activeFilter, setActiveFilter] = useState('Upcoming');
   const today = todayInPacific();
   const tomorrow = addDaysToDay(today, 1);
-  const filterButtons = ['Today', 'Tomorrow', 'This Week', 'Watchlist Only', 'High Impact'];
+  const filterButtons = ['Upcoming', 'Today', 'Tomorrow', 'This Week', 'Watchlist Only', 'High Impact'];
   const filteredEarnings = earnings.filter((event) => {
+    if (activeFilter === 'Upcoming') return event.date >= today;
     if (activeFilter === 'Today') return event.date === today;
     if (activeFilter === 'Tomorrow') return event.date === tomorrow;
     if (activeFilter === 'Watchlist Only') return event.watchlistMatch;
     if (activeFilter === 'High Impact') return event.impact === 'High';
     return true;
   });
+  const sortedFilteredEarnings = [...filteredEarnings].sort((a, b) => a.date.localeCompare(b.date) || a.session.localeCompare(b.session) || a.symbol.localeCompare(b.symbol));
   const todayEvents = earnings.filter((event) => event.date === today);
   const tomorrowEvents = earnings.filter((event) => event.date === tomorrow);
   const watchlistEvents = earnings.filter((event) => event.watchlistMatch).slice(0, 8);
@@ -820,7 +822,7 @@ function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]
             <h2>{activeFilter} Earnings</h2>
           </div>
           <div className="event-list">
-            {filteredEarnings.slice(0, 18).map((event) => (
+            {sortedFilteredEarnings.slice(0, 18).map((event) => (
               <div className="event-row" key={`${event.symbol}-${event.date}-${event.session}`}>
                 <CalendarDays size={18} />
                 <div>
