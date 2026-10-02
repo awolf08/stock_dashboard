@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import watchlist from '../config/watchlist.json';
+import { embeddedEventsPayload } from '../lib/events-snapshot.generated';
 import { parseEventsPayload, type EarningsEvent } from '../lib/events';
 import { parseMarketPayload, snapshotIsStale, type Quote } from '../lib/market';
 
@@ -53,6 +54,7 @@ const refreshQuotesUrl = process.env.NEXT_PUBLIC_REFRESH_QUOTES_URL || '';
 const refreshPollIntervalMs = 20_000;
 const refreshPollTimeoutMs = 5 * 60_000;
 const marketCategoryNames = new Set(['index etf', 'sector etf', 'technology / semis etf', 'leveraged etf', 'fund/bond', 'commodity / macro etf']);
+const initialEventsPayload = parseEventsPayload(embeddedEventsPayload);
 
 const historyRows = [
   ['Daily After-hours Report', 'May 16, 2025', '07:45 PM ET', 'Mixed close as tech strength offsets energy weakness'],
@@ -253,12 +255,13 @@ export default function Home() {
   const [indexes, setIndexes] = useState<Quote[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [earningsEvents, setEarningsEvents] = useState<EarningsEvent[]>([]);
-  const [eventsGeneratedAt, setEventsGeneratedAt] = useState<string | null>(null);
+  const [earningsEvents, setEarningsEvents] = useState<EarningsEvent[]>(initialEventsPayload.earnings);
+  const [eventsGeneratedAt, setEventsGeneratedAt] = useState<string | null>(initialEventsPayload.generatedAt);
   const [eventsError, setEventsError] = useState(false);
   const [now, setNow] = useState(0);
   const [symbolError, setSymbolError] = useState('');
   const feedQuotes = useRef<Quote[]>([]);
+  const eventsLoaded = useRef(Boolean(initialEventsPayload.generatedAt));
   const loaded = useRef(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [overviewView, setOverviewView] = useState<'market' | 'stocks'>('market');
@@ -356,11 +359,12 @@ export default function Home() {
         if (!response.ok) throw new Error('Events unavailable');
         const payload = parseEventsPayload(await response.json());
         if (stopped) return;
+        eventsLoaded.current = true;
         setEarningsEvents(payload.earnings);
         setEventsGeneratedAt(payload.generatedAt);
         setEventsError(false);
       } catch {
-        if (!stopped) setEventsError(true);
+        if (!stopped) setEventsError(!eventsLoaded.current);
       } finally {
         clearTimeout(timeout);
         if (!stopped) timer = setTimeout(refreshEvents, 5 * 60 * 1000);

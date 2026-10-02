@@ -87,6 +87,16 @@ export async function fetchEarningsCalendar({ apiKey, from, to, fetchImpl = fetc
   throw new Error('Earnings calendar request failed.');
 }
 
+function dedupeEarningsEvents(events) {
+  const seen = new Set();
+  return events.filter((event) => {
+    const key = `${event.symbol}:${event.date}:${event.session}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export async function updateEventsData({
   apiKey = process.env.FINNHUB_API_KEY,
   outputDir = new URL('../public/data/', import.meta.url),
@@ -103,9 +113,9 @@ export async function updateEventsData({
   const to = addDaysToDay(from, 7);
   const watchlistSet = watchlistSymbols(watchlist);
   const rawEvents = await fetchEarningsCalendar({ apiKey, from, to, fetchImpl, sleep });
-  const earnings = rawEvents
+  const earnings = dedupeEarningsEvents(rawEvents
     .map((event) => normalizeEarningsEvent(event, watchlistSet))
-    .sort((a, b) => a.date.localeCompare(b.date) || Number(b.watchlistMatch) - Number(a.watchlistMatch) || a.symbol.localeCompare(b.symbol));
+    .sort((a, b) => a.date.localeCompare(b.date) || Number(b.watchlistMatch) - Number(a.watchlistMatch) || a.symbol.localeCompare(b.symbol)));
   const payload = { schemaVersion: 1, provider: 'finnhub', generatedAt: new Date().toISOString(), range: { from, to }, earnings };
   await mkdir(outputDir, { recursive: true });
   const temporaryFile = new URL('events.json.tmp', outputDir);

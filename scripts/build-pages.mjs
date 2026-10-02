@@ -3,6 +3,7 @@ import { generateDailyMarketArticle } from './generate-daily-market-article.mjs'
 import { generateDailyMarketSummary } from './generate-daily-market-summary.mjs';
 import { generateDailyFinance } from './generate-daily-finance.mjs';
 import { generateWeeklyFinance } from './generate-weekly-finance.mjs';
+import { generateEventsSnapshotModule } from './generate-events-snapshot-module.mjs';
 import { readFile, writeFile, access, rename, rm } from 'node:fs/promises';
 
 const basePath = (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/$/, '');
@@ -16,6 +17,7 @@ if (privateReportsUrl) {
 if (basePath && !/^\/[A-Za-z0-9._-]+$/.test(basePath)) {
   throw new Error('NEXT_PUBLIC_BASE_PATH must be empty or a single /repository-name path.');
 }
+await generateEventsSnapshotModule();
 await generateDailyMarketSummary();
 await generateDailyMarketArticle();
 await generateDailyFinance();

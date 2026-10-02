@@ -42,7 +42,7 @@ test('events refresh writes only verified payloads', async () => {
   try {
     const payload = await updateEventsData({ apiKey: 'test-key', outputDir, now: new Date('2026-09-14T16:00:00Z'), sleep,
       watchlist: [{ name: 'AI', symbols: ['NVDA'] }],
-      fetchImpl: async () => Response.json({ earningsCalendar: [raw, { ...raw, symbol: 'AAPL', date: '2026-09-15', hour: 'bmo' }] }),
+      fetchImpl: async () => Response.json({ earningsCalendar: [raw, { ...raw }, { ...raw, symbol: 'AAPL', date: '2026-09-15', hour: 'bmo' }] }),
     });
     assert.equal(payload.range.from, '2026-09-14');
     assert.equal(payload.range.to, '2026-09-21');
