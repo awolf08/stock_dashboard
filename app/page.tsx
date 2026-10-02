@@ -111,8 +111,15 @@ function watchlistTone(category: Category) {
 }
 
 
-function todayInPacific() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+function dayInPacific(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 function addDaysToDay(day: string, days: number) {
@@ -771,7 +778,7 @@ function QuotePanel({
 
 function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]; generatedAt: string | null; hasError: boolean }) {
   const [activeFilter, setActiveFilter] = useState('Upcoming');
-  const today = todayInPacific();
+  const today = dayInPacific();
   const tomorrow = addDaysToDay(today, 1);
   const filterButtons = ['Upcoming', 'Today', 'Tomorrow', 'This Week', 'Watchlist Only', 'High Impact'];
   const filteredEarnings = earnings.filter((event) => {
