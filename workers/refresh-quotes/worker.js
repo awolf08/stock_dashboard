@@ -58,6 +58,15 @@ async function recentRun(env) {
 }
 
 const handler = {
+  async scheduled(_controller, env) {
+    if (!env.GITHUB_TOKEN) throw new Error('Worker is missing GITHUB_TOKEN.');
+    if (await recentRun(env)) return;
+    const workflow = env.GITHUB_WORKFLOW || 'deploy-homepage.yml';
+    await githubJson(env, `/actions/workflows/${workflow}/dispatches`, {
+      method: 'POST',
+      body: JSON.stringify({ ref: env.GITHUB_REF || 'main' }),
+    });
+  },
   async fetch(request, env) {
     const origin = allowedOrigin(request, env);
     if (request.method === 'OPTIONS') return json({}, { status: 204 }, origin);

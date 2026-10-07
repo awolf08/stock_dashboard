@@ -2,6 +2,8 @@
 
 This Cloudflare Worker lets the public dashboard request a safe quote refresh without exposing a GitHub token in the browser.
 
+Cloudflare also triggers the same workflow every hour at minute 17 (UTC), independently of GitHub's delayed scheduled runs. Active or recently started builds suppress duplicate dispatches using the existing cooldown. Dispatch errors fail the scheduled invocation so they are visible in Worker logs.
+
 ## Setup
 
 1. Create a GitHub fine-grained token for `awolf08/reports` with Actions workflow permission.

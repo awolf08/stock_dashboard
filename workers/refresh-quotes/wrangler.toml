@@ -2,6 +2,9 @@ name = "baybell-refresh-quotes"
 main = "worker.js"
 compatibility_date = "2026-09-16"
 
+[triggers]
+crons = ["17 * * * *"]
+
 [vars]
 GITHUB_OWNER = "awolf08"
 GITHUB_REPO = "reports"
