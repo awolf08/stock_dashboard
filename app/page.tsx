@@ -22,7 +22,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import watchlist from '../config/watchlist.json';
 import { embeddedEventsPayload } from '../lib/events-snapshot.generated';
-import { parseEventsPayload, type EarningsEvent } from '../lib/events';
+import { compareEarningsMarketCap, formatMarketCap, parseEventsPayload, type EarningsEvent } from '../lib/events';
 import { parseMarketPayload, snapshotIsStale, type Quote } from '../lib/market';
 
 type Page = 'overview' | 'events' | 'reports';
@@ -785,7 +785,8 @@ function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]
   const today = dayInPacific();
   const tomorrow = addDaysToDay(today, 1);
   const filterButtons = ['Upcoming', 'Today', 'Tomorrow', 'This Week', 'Watchlist Only', 'High Impact'];
-  const filteredEarnings = earnings.filter((event) => {
+  const rankedEarnings = [...earnings].sort(compareEarningsMarketCap);
+  const filteredEarnings = rankedEarnings.filter((event) => {
     if (activeFilter === 'Upcoming') return event.date >= today;
     if (activeFilter === 'Today') return event.date === today;
     if (activeFilter === 'Tomorrow') return event.date === tomorrow;
@@ -793,11 +794,11 @@ function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]
     if (activeFilter === 'High Impact') return event.impact === 'High';
     return true;
   });
-  const sortedFilteredEarnings = [...filteredEarnings].sort((a, b) => a.date.localeCompare(b.date) || a.session.localeCompare(b.session) || a.symbol.localeCompare(b.symbol));
-  const todayEvents = earnings.filter((event) => event.date === today);
-  const tomorrowEvents = earnings.filter((event) => event.date === tomorrow);
-  const watchlistEvents = earnings.filter((event) => event.watchlistMatch).slice(0, 8);
-  const days = Array.from(new Set(earnings.map((event) => event.date))).slice(0, 7);
+  const sortedFilteredEarnings = filteredEarnings;
+  const todayEvents = rankedEarnings.filter((event) => event.date === today);
+  const tomorrowEvents = rankedEarnings.filter((event) => event.date === tomorrow);
+  const watchlistEvents = rankedEarnings.filter((event) => event.watchlistMatch).slice(0, 8);
+  const days = Array.from(new Set(earnings.map((event) => event.date))).sort().slice(0, 7);
   return (
     <div className="page-content">
       <div className="page-heading">
@@ -817,6 +818,7 @@ function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]
             ? `Finnhub earnings calendar · updated ${new Date(generatedAt).toLocaleString()}`
             : 'Loading verified earnings events…'}
       </div>
+      <p className="muted-text">Market cap: largest first within each list · USD · Nasdaq · Missing market caps appear last ({earnings.filter((event) => event.marketCap === undefined).length} unavailable).</p>
       <div className="events-grid">
         <article className="data-card earnings-card">
           <div className="card-title">
@@ -838,7 +840,7 @@ function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]
                 <CalendarDays size={18} />
                 <div>
                   <strong><a className="symbol-link" href={yahooChartUrl(event.symbol)} target="_blank" rel="noreferrer">{event.symbol}</a></strong>
-                  <span>{event.company || formatDayLabel(event.date)}</span>
+                  <span>{formatDayLabel(event.date)} · {formatMarketCap(event.marketCap)}</span>
                 </div>
                 <time>{event.timeLabel}</time>
                 <ImpactBadge impact={event.impact} />
@@ -856,7 +858,7 @@ function Events({ earnings, generatedAt, hasError }: { earnings: EarningsEvent[]
         </div>
         <div className="week-grid">
           {days.map((day) => {
-            const dayEvents = earnings.filter((event) => event.date === day);
+            const dayEvents = rankedEarnings.filter((event) => event.date === day);
             return (
               <div className={`day-column ${day === today ? 'active' : ''}`} key={day}>
                 <strong>{formatDayLabel(day)}</strong>
@@ -924,7 +926,7 @@ function EarningsSession({ rows, title }: { rows: EarningsEvent[]; title: string
       {rows.map((event) => (
         <div className="earnings-row" key={`${event.symbol}-${event.date}-${event.session}`}>
           <strong><a className="symbol-link" href={yahooChartUrl(event.symbol)} target="_blank" rel="noreferrer">{event.symbol}</a></strong>
-          <span>{event.company || event.symbol}</span>
+          <span title={event.company || event.symbol}>{formatMarketCap(event.marketCap)}</span>
           <span>{formatEventNumber(event.epsEstimate)}</span>
           <span>{formatEventNumber(event.revenueEstimate, true)}</span>
           <time>{event.timeLabel}</time>

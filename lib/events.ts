@@ -1,6 +1,7 @@
 export type EarningsEvent = {
   symbol: string;
   company?: string;
+  marketCap?: number; // USD, from Nasdaq stock screener
   date: string;
   session: 'before-open' | 'after-close' | 'during-market' | 'unknown';
   timeLabel: string;
@@ -43,6 +44,7 @@ export function parseEventsPayload(value: unknown): EventsPayload {
         typeof event.timeLabel !== 'string' || !event.timeLabel.trim() ||
         !['High', 'Medium', 'Low'].includes(String(event.impact)) || typeof event.watchlistMatch !== 'boolean' ||
         (event.company !== undefined && typeof event.company !== 'string') ||
+        (event.marketCap !== undefined && (!finite(event.marketCap) || event.marketCap <= 0)) ||
         (event.epsEstimate !== undefined && !finite(event.epsEstimate)) ||
         (event.revenueEstimate !== undefined && !finite(event.revenueEstimate))) {
       throw new Error('Invalid earnings event');
@@ -55,4 +57,14 @@ export function parseEventsPayload(value: unknown): EventsPayload {
     seen.add(key);
   }
   return value as EventsPayload;
+}
+
+// Unknown market caps sort last; deterministic ties preserve event identity.
+export function compareEarningsMarketCap(a: EarningsEvent, b: EarningsEvent): number {
+  return (b.marketCap ?? 0) - (a.marketCap ?? 0) || a.date.localeCompare(b.date) || a.session.localeCompare(b.session) || a.symbol.localeCompare(b.symbol);
+}
+
+export function formatMarketCap(value?: number): string {
+  if (value === undefined) return 'Market cap unavailable';
+  return `Cap $${new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 }).format(value)}`;
 }

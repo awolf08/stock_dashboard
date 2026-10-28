@@ -87,6 +87,26 @@ export async function fetchEarningsCalendar({ apiKey, from, to, fetchImpl = fetc
   throw new Error('Earnings calendar request failed.');
 }
 
+// Nasdaq's US-listed stock screener provides market capitalization in USD.
+export async function fetchMarketCaps({ fetchImpl = fetch } = {}) {
+  const response = await fetchImpl('https://api.nasdaq.com/api/screener/stocks?tableonly=true&limit=10000&download=true', {
+    headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0' },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!response.ok) throw new Error(`Market caps request failed: HTTP ${response.status}`);
+  const data = await response.json();
+  if (!Array.isArray(data?.data?.rows)) throw new Error('Invalid market caps response');
+  const caps = new Map();
+  for (const row of data.data.rows) {
+    const cap = typeof row.marketCap === 'number' ? row.marketCap : Number(String(row.marketCap ?? '').replaceAll(',', '').replaceAll('$', ''));
+    if (typeof row.symbol === 'string' && Number.isFinite(cap) && cap > 0) {
+      caps.set(row.symbol.trim().toUpperCase(), cap);
+    }
+  }
+  if (!caps.size) throw new Error('No valid market caps returned');
+  return caps;
+}
+
 function dedupeEarningsEvents(events) {
   const seen = new Set();
   return events.filter((event) => {
@@ -116,6 +136,17 @@ export async function updateEventsData({
   const earnings = dedupeEarningsEvents(rawEvents
     .map((event) => normalizeEarningsEvent(event, watchlistSet))
     .sort((a, b) => a.date.localeCompare(b.date) || Number(b.watchlistMatch) - Number(a.watchlistMatch) || a.symbol.localeCompare(b.symbol)));
+  try {
+    const caps = await fetchMarketCaps({ fetchImpl });
+    for (const event of earnings) {
+      const cap = caps.get(event.symbol);
+      if (cap !== undefined) event.marketCap = cap;
+    }
+    console.log(`Market cap coverage: ${earnings.filter((event) => event.marketCap !== undefined).length}/${earnings.length} earnings events.`);
+  } catch (error) {
+    // Market cap availability must never prevent publication of the earnings calendar.
+    console.warn(`Market cap enrichment unavailable: ${error.message}`);
+  }
   const payload = { schemaVersion: 1, provider: 'finnhub', generatedAt: new Date().toISOString(), range: { from, to }, earnings };
   await mkdir(outputDir, { recursive: true });
   const temporaryFile = new URL('events.json.tmp', outputDir);
